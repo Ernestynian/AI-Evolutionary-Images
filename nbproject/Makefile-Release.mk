@@ -35,8 +35,9 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/App.o \
-	${OBJECTDIR}/main.o
+	${OBJECTDIR}/app.o \
+	${OBJECTDIR}/main.o \
+	${OBJECTDIR}/population.o
 
 
 # C Compiler Flags
@@ -63,15 +64,20 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/projekt: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/projekt ${OBJECTFILES} ${LDLIBSOPTIONS}
 
-${OBJECTDIR}/App.o: App.cpp
+${OBJECTDIR}/app.o: app.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/App.o App.cpp
+	$(COMPILE.cc) -O2 -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/app.o app.cpp
 
 ${OBJECTDIR}/main.o: main.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.cpp
+
+${OBJECTDIR}/population.o: population.cpp
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/population.o population.cpp
 
 # Subprojects
 .build-subprojects:
