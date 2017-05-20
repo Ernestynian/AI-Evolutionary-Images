@@ -91,6 +91,11 @@
         <asmTool>
           <developmentMode>5</developmentMode>
         </asmTool>
+        <linkerTool>
+          <linkerLibItems>
+            <linkerOptionItem>`pkg-config --libs opencv`</linkerOptionItem>
+          </linkerLibItems>
+        </linkerTool>
       </compileType>
       <item path="Cat.jpg" ex="false" tool="3" flavor2="0">
       </item>

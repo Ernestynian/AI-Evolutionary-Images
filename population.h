@@ -28,6 +28,8 @@ public:
 private:
 	Point** copySolution(Point** solution);
 	
+	const double selectionRate = 0.2;
+	
 	Scalar** colors;
 	Point*** solutions;
 	bool* selected;
@@ -35,7 +37,7 @@ private:
 	int cols, rows;
 	int populationSize;
 	int triangleCount;
-	long long* grades;
+	unsigned long long* grades;
 	Mat* images;
 	
 	NormalizedGrade* normGrades;

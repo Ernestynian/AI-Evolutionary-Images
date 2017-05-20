@@ -10,7 +10,7 @@ Population::Population(int populationSize, int triangleCount, int cols, int rows
     this->cols = cols;
     this->rows = rows;
 
-    grades = new long long[populationSize];
+    grades = new unsigned long long[populationSize];
     solutions = new Point**[populationSize];
     colors = new Scalar*[populationSize];
     selected = new bool[populationSize];
@@ -100,7 +100,7 @@ Mat Population::topResult() {
     long long best = grades[0];
 
     for (int i = 1; i < populationSize; i++) {
-        if (grades[i] < best) {
+        if (grades[i] > best) {
             index = i;
             best = grades[i];
         }
@@ -154,7 +154,7 @@ void Population::selectionRoulette() {
         printf("%d acc: %f\n", i, normGrades[i].getAccumulated());
 
     // Choose
-    for (int i = 0; i < populationSize / 2; i++) { // TODO: change populationSize / 2
+    for (int i = 0; i < populationSize * selectionRate; i++) { // TODO: change populationSize / 2
         int j = 0;
         do {
             double R = rng.uniform(0.0, 1.0);
@@ -176,7 +176,7 @@ void Population::selectionRoulette() {
 void Population::crossover() {
     int lastNotSelected = 0;
 
-    for (int i = 0; i < populationSize / 2; i++) {
+    for (int i = 0; i < populationSize * selectionRate; i++) {
         int a, b; // parents
         do {
             a = rng.uniform(0, populationSize);
@@ -212,23 +212,31 @@ void Population::mutation() {
     for (int i = 0; i < populationSize; i++) {
         for (int j = 0; j < triangleCount; j++) {
             for (int k = 0; k < 3; k++) {
-                int r1 = ((rng.uniform(1, cols*2) - cols)/2)/10; //that 10 is a parameter, describing scale of mutation
-                if (solutions[i][j][k].x + r1 < cols
-                        && solutions[i][j][k].x + r1 >= 0) {
-                    solutions[i][j][k].x += r1;
-                }
-                //else
-                //    solutions[i][j][k].x -=
-                int r2 = ((rng.uniform(1, rows*2) - rows)/2)/10; //that 10 is a parameter, describing scale of mutation
-                if (solutions[i][j][k].y + r2 < rows
-                        && solutions[i][j][k].y + r2 >= 0) {//<= or < ???
-                    solutions[i][j][k].y += r2;
-                }
-                //else
-                //    solutions[i][j][k].x -=
-                int r3 = ((rng.uniform(1, 255*2) - 255)/2)/10; //same here
-                if (colors[i][j][k] + r3 < 255 && colors[i][j][k] + r3 >= 0)
-                    colors[i][j][k] += r3;
+				if (rng.uniform(0, 100) < 10) {
+					int r1 = ((rng.uniform(1, cols*2) - cols)/2)/10; //that 10 is a parameter, describing scale of mutation
+					if (solutions[i][j][k].x + r1 < cols
+							&& solutions[i][j][k].x + r1 >= 0) {
+						solutions[i][j][k].x += r1;
+					}
+					//else
+					//    solutions[i][j][k].x -=
+				}
+				
+				if (rng.uniform(0, 100) < 10) {
+					int r2 = ((rng.uniform(1, rows*2) - rows)/2)/10; //that 10 is a parameter, describing scale of mutation
+					if (solutions[i][j][k].y + r2 < rows
+							&& solutions[i][j][k].y + r2 >= 0) {//<= or < ???
+						solutions[i][j][k].y += r2;
+					}
+					//else
+					//    solutions[i][j][k].x -=
+				}
+				
+				if (rng.uniform(0, 100) < 10) {
+					int r3 = ((rng.uniform(1, 255*2) - 255)/2)/10; //same here
+					if (colors[i][j][k] + r3 < 255 && colors[i][j][k] + r3 >= 0)
+						colors[i][j][k] += r3;
+				}
             }
         }
     }

@@ -55,7 +55,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=
+LDLIBSOPTIONS=`pkg-config --libs opencv`  
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
@@ -68,22 +68,22 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/projekt: ${OBJECTFILES}
 ${OBJECTDIR}/app.o: app.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/app.o app.cpp
+	$(COMPILE.cc) -O2 `pkg-config --cflags opencv` -std=c++11  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/app.o app.cpp
 
 ${OBJECTDIR}/main.o: main.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.cpp
+	$(COMPILE.cc) -O2 `pkg-config --cflags opencv` -std=c++11  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.cpp
 
 ${OBJECTDIR}/normalizedGrade.o: normalizedGrade.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/normalizedGrade.o normalizedGrade.cpp
+	$(COMPILE.cc) -O2 `pkg-config --cflags opencv` -std=c++11  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/normalizedGrade.o normalizedGrade.cpp
 
 ${OBJECTDIR}/population.o: population.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/population.o population.cpp
+	$(COMPILE.cc) -O2 `pkg-config --cflags opencv` -std=c++11  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/population.o population.cpp
 
 # Subprojects
 .build-subprojects:
