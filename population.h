@@ -35,7 +35,7 @@ private:
 	int cols, rows;
 	int populationSize;
 	int triangleCount;
-	double* grades;
+	long long* grades;
 	Mat* images;
 	
 	NormalizedGrade* normGrades;
