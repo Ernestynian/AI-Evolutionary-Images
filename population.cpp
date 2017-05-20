@@ -62,7 +62,7 @@ Population::~Population() {
 
 void Population::createImages() {
     for (int i = 0; i < populationSize; i++) {
-        images[i] = Mat(rows, cols, CV_8UC3, Scalar(255, 255, 255));
+        images[i] = Mat(rows, cols, CV_8UC3, Scalar(0, 0, 0));
         for (int j = 0; j < triangleCount; j++) {
             const Point * ppt[1] = {solutions[i][j]};
             int npt[] = {3};
@@ -80,15 +80,17 @@ void Population::fitness(Mat& target) {
 //        
 //        temp = abs(temp);
 //        imshow("temp", temp);
-        for(int j = 0; j < 300; j++)
+        grades[i] = 0;
+        for(int j = 0; j < rows; j++)
         {
-            for(int k = 0; k < 300; k++)
+            for(int k = 0; k < cols; k++)
             {
                 grades[i] += abs(target.at<Vec3b>(j,k)[0] - images[i].at<Vec3b>(j,k)[0]); 
                 grades[i] += abs(target.at<Vec3b>(j,k)[1] - images[i].at<Vec3b>(j,k)[1]); 
-                grades[i] += abs(target.at<Vec3b>(j,k)[2] - images[i].at<Vec3b>(j,k)[2]); 
+                grades[i] += abs(target.at<Vec3b>(j,k)[2] - images[i].at<Vec3b>(j,k)[2]);
             }
         }
+        grades[i] = LLONG_MAX - grades[i];
 //                grades[i] = sum(temp)[0] + sum(temp)[1] + sum(temp)[2];//
     }
 }
@@ -210,21 +212,21 @@ void Population::mutation() {
     for (int i = 0; i < populationSize; i++) {
         for (int j = 0; j < triangleCount; j++) {
             for (int k = 0; k < 3; k++) {
-                int r1 = rng.uniform(-cols / 100, cols / 100); //that 10 is a parameter, describing scale of mutation
+                int r1 = ((rng.uniform(1, cols*2) - cols)/2)/10; //that 10 is a parameter, describing scale of mutation
                 if (solutions[i][j][k].x + r1 < cols
                         && solutions[i][j][k].x + r1 >= 0) {
                     solutions[i][j][k].x += r1;
                 }
                 //else
                 //    solutions[i][j][k].x -=
-                int r2 = rng.uniform(-rows / 100, rows / 100); //that 10 is a parameter, describing scale of mutation
-                if (solutions[i][j][k].y + r1 < rows
+                int r2 = ((rng.uniform(1, rows*2) - rows)/2)/10; //that 10 is a parameter, describing scale of mutation
+                if (solutions[i][j][k].y + r2 < rows
                         && solutions[i][j][k].y + r2 >= 0) {//<= or < ???
                     solutions[i][j][k].y += r2;
                 }
                 //else
                 //    solutions[i][j][k].x -=
-                int r3 = rng.uniform(-255 / 100, 255 / 100); //same here
+                int r3 = ((rng.uniform(1, 255*2) - 255)/2)/10; //same here
                 if (colors[i][j][k] + r3 < 255 && colors[i][j][k] + r3 >= 0)
                     colors[i][j][k] += r3;
             }
