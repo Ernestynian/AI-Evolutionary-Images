@@ -21,14 +21,16 @@ public:
 	void mutation();
 	void fitness(Mat& target);
 	
-	//Mat asImage(Size size, int id);
 	void createImages();
 	Mat topResult();
+	unsigned long long topFitness();
 	
 private:
 	Point** copySolution(Point** solution);
 	
-	const double selectionRate = 0.2;
+	const double selectionRate = 0.5;
+	const int    mutationChance = 3;
+
 	
 	Scalar** colors;
 	Point*** solutions;
@@ -38,6 +40,8 @@ private:
 	int populationSize;
 	int triangleCount;
 	unsigned long long* grades;
+	unsigned long long worst, best;
+	int bestIndex;
 	Mat* images;
 	
 	NormalizedGrade* normGrades;

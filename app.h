@@ -8,17 +8,21 @@ using namespace cv;
 
 class App {
 public:
-	//App();
+	App();
 
 	void run();
 private:
-	void drawImages(Mat image1, Mat image2, int pid);
+	void drawImages(Mat image1, Mat image2, int pid, unsigned long long fitness);
 	char buffer[128];
 
-	const int populations    = 1000;
+	Scalar white;
+	Point pPos;
+	Point fPos;
 	
-	const int triangleCount  = 10;
-	const int populationSize = 10;
+	const int populations    = 5000;
+	
+	const int triangleCount  = 20;
+	const int populationSize = 50;
 	
 	const char* windowTitle = "AI Evolutionary Images";	
 };
