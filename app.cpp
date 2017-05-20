@@ -16,7 +16,7 @@ void App::run() {
 	population.fitness(input);
 
 	for(int i = 0; i < populations; ++i) {
-		population.selection();
+		population.selectionRoulette();
 		population.crossover();
 		population.mutation();
 		
@@ -25,7 +25,7 @@ void App::run() {
 		drawImages(input, population.topResult(), i);
 
 		// Stop when key is pressed
-		if (waitKey(1000) == 'q')
+		if (waitKey(10) == 'q')
 			break;
 	}
 }

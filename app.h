@@ -15,10 +15,10 @@ private:
 	void drawImages(Mat image1, Mat image2, int pid);
 	char buffer[128];
 
-	const int populations    = 50;
+	const int populations    = 500;
 	
 	const int triangleCount  = 10;
-	const int populationSize = 100;
+	const int populationSize = 10;
 	
 	const char* windowTitle = "AI Evolutionary Images";	
 };

@@ -37,6 +37,7 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 OBJECTFILES= \
 	${OBJECTDIR}/app.o \
 	${OBJECTDIR}/main.o \
+	${OBJECTDIR}/normalizedGrade.o \
 	${OBJECTDIR}/population.o
 
 
@@ -73,6 +74,11 @@ ${OBJECTDIR}/main.o: main.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.cpp
+
+${OBJECTDIR}/normalizedGrade.o: normalizedGrade.cpp
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/normalizedGrade.o normalizedGrade.cpp
 
 ${OBJECTDIR}/population.o: population.cpp
 	${MKDIR} -p ${OBJECTDIR}

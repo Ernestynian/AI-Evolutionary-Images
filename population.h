@@ -6,13 +6,17 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <time.h>
 
+#include "normalizedGrade.h"
+
 using namespace cv;
 
 class Population {
 public:
 	Population(int population_size, int triangle_count, int cols, int rows);
+	~Population();
 	
-	void selection();
+	void selectionStochastic();
+	void selectionRoulette();
 	void crossover();
 	void mutation();
 	void fitness(Mat& target);
@@ -26,11 +30,15 @@ private:
 	
 	Scalar** colors;
 	Point*** solutions;
+	bool* selected;
+	
 	int cols, rows;
 	int populationSize;
 	int triangleCount;
 	double* grades;
 	Mat* images;
+	
+	NormalizedGrade* normGrades;
 	
 	RNG rng;
 };
