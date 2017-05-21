@@ -1,7 +1,11 @@
+#include <chrono>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
 #include "app.h"
+
+using namespace std;
+using namespace std::chrono;
 
 
 App::App() 
@@ -29,12 +33,28 @@ void App::run() {
 	
 	int i = 0;
 	for(; i < populations; ++i) {
+		high_resolution_clock::time_point t1 = high_resolution_clock::now();
 		population.selectionRoulette();
+		high_resolution_clock::time_point t2 = high_resolution_clock::now();
 		population.crossover();
+		high_resolution_clock::time_point t3 = high_resolution_clock::now();
 		population.mutation();
+		high_resolution_clock::time_point t4 = high_resolution_clock::now();
 		
+		population.createImages();
+		high_resolution_clock::time_point t5 = high_resolution_clock::now();
 		population.fitness(input);
+		high_resolution_clock::time_point t6 = high_resolution_clock::now();
 
+		auto durationSel = duration_cast<microseconds>( t2 - t1 ).count();
+		auto durationCro = duration_cast<microseconds>( t3 - t2 ).count();
+		auto durationMut = duration_cast<microseconds>( t4 - t3 ).count();
+		auto durationCre = duration_cast<microseconds>( t5 - t4 ).count();
+		auto durationFit = duration_cast<microseconds>( t6 - t5 ).count();
+		
+		cout << "Sel: " << durationSel << " | Cro: " << durationCro 
+		   << " | Mut: " << durationMut << " | Fit: " << durationCre << " + " << durationFit << "\n";
+		
 		unsigned long long currentFitness = population.topFitness();
 		if (currentFitness < bestFitness) {
 			bestFitness = currentFitness;
@@ -48,7 +68,7 @@ void App::run() {
 			break;
 	}
 	
-	drawImages(input, bestImage, population.topResult(), i, population.topFitness());
+	drawImages(input, bestImage, population.topResult(), i, bestFitness);
 	waitKey(0);
 }
 
