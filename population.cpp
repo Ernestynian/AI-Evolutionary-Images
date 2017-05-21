@@ -83,15 +83,18 @@ void Population::fitness(Mat& target) {
 	
 	Mat temp;
 	for(int i = 0; i < populationSize; i++) {
-		grades[i] = 0;
-		for(int j = 0; j < rows; j++) {
-			for(int k = 0; k < cols; k++) {
-				grades[i] += abs(target.at<Vec3b>(j, k)[0] - images[i].at<Vec3b>(j, k)[0]);
-				grades[i] += abs(target.at<Vec3b>(j, k)[1] - images[i].at<Vec3b>(j, k)[1]);
-				grades[i] += abs(target.at<Vec3b>(j, k)[2] - images[i].at<Vec3b>(j, k)[2]);
-			}
-		}
-		
+//		grades[i] = 0;
+//		for(int j = 0; j < rows; j++) {
+//			for(int k = 0; k < cols; k++) {
+//				grades[i] += abs(target.at<Vec3b>(j, k)[0] - images[i].at<Vec3b>(j, k)[0]);
+//				grades[i] += abs(target.at<Vec3b>(j, k)[1] - images[i].at<Vec3b>(j, k)[1]);
+//				grades[i] += abs(target.at<Vec3b>(j, k)[2] - images[i].at<Vec3b>(j, k)[2]);
+//			}
+//		}
+            absdiff(target, images[i], temp);
+            Scalar s = sum(temp);
+            grades[i] = s[0] + s[1] + s[2];
+            
 		if(grades[i] > worst)
 			worst = grades[i];
 		
