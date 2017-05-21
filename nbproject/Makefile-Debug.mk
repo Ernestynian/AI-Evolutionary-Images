@@ -38,7 +38,8 @@ OBJECTFILES= \
 	${OBJECTDIR}/app.o \
 	${OBJECTDIR}/main.o \
 	${OBJECTDIR}/normalizedGrade.o \
-	${OBJECTDIR}/population.o
+	${OBJECTDIR}/population.o \
+	${OBJECTDIR}/renderer.o
 
 
 # C Compiler Flags
@@ -63,7 +64,7 @@ LDLIBSOPTIONS=`pkg-config --libs opencv`
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/projekt: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/projekt ${OBJECTFILES} ${LDLIBSOPTIONS}
+	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/projekt ${OBJECTFILES} ${LDLIBSOPTIONS} -lGLU -lGL -lX11
 
 ${OBJECTDIR}/app.o: app.cpp
 	${MKDIR} -p ${OBJECTDIR}
@@ -84,6 +85,11 @@ ${OBJECTDIR}/population.o: population.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -g `pkg-config --cflags opencv` -std=c++11  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/population.o population.cpp
+
+${OBJECTDIR}/renderer.o: renderer.cpp
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g `pkg-config --cflags opencv` -std=c++11  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/renderer.o renderer.cpp
 
 # Subprojects
 .build-subprojects:

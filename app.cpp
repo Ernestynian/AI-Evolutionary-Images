@@ -26,6 +26,7 @@ void App::run() {
 	Population population(populationSize, triangleCount,
 						  input.cols, input.rows);
 
+	population.createImages();
 	population.fitness(input);
 
 	unsigned long long bestFitness = ULONG_MAX;
@@ -52,13 +53,16 @@ void App::run() {
 		auto durationCre = duration_cast<microseconds>( t5 - t4 ).count();
 		auto durationFit = duration_cast<microseconds>( t6 - t5 ).count();
 		
-		cout << "Sel: " << durationSel << " | Cro: " << durationCro 
-		   << " | Mut: " << durationMut << " | Fit: " << durationCre << " + " << durationFit << "\n";
+		cout << "Sel: "    << std::setw(2) << durationSel
+			 << " | Cro: " << std::setw(3) << durationCro 
+		     << " | Mut: " << std::setw(2) << durationMut
+		     << " | Fit: " << std::setw(5) << durationCre
+		     << " + " << std::setw(4) << durationFit << "\n";
 		
 		unsigned long long currentFitness = population.topFitness();
 		if (currentFitness < bestFitness) {
 			bestFitness = currentFitness;
-			bestImage = population.topResult();
+			population.topResult().copyTo(bestImage);
 		}
 		
 		drawImages(input, bestImage, population.topResult(), i, bestFitness);

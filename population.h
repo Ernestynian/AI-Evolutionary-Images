@@ -7,6 +7,7 @@
 #include <time.h>
 
 #include "normalizedGrade.h"
+#include "renderer.h"
 
 using namespace cv;
 
@@ -28,9 +29,11 @@ public:
 private:
 	Point** copySolution(Point** solution);
 	
-	const double selectionRate = 0.5;
-	const int    mutationChance = 3;
+	const double selectionRate = 0.15;
+	const int    mutationChance = 5;
+	const int    mutTriChance = 40;
 
+	Renderer* renderer;
 	
 	Scalar** colors;
 	Point*** solutions;

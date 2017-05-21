@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <stdio.h> // debug
+#include <cstdio>
 
 #include "population.h"
 
@@ -39,6 +39,8 @@ Population::Population(int populationSize, int triangleCount, int cols, int rows
 			solutions[i][j][2].y = rng.uniform(0, rows);
 		}
 	}
+	
+	renderer = new Renderer(cols, rows);
 }
 
 
@@ -59,49 +61,55 @@ Population::~Population() {
 	delete[] normGrades;
 
 	delete[] images;
+	
+	delete renderer;
 }
 
 
 void Population::createImages() {
+	/* could be used as a second trivial method
+	
+	Mat empty = Mat(rows, cols, CV_8UC3, Scalar(0, 0, 0));
+	Mat overlay = Mat(rows, cols, CV_8UC3, Scalar(0, 0, 0));
+	
+	double alpha = 0.2;
+	
 	for(int i = 0; i < populationSize; i++) {
-		images[i] = Mat(rows, cols, CV_8UC3, Scalar(0, 0, 0));
+		empty.copyTo(images[i]);
+		empty.copyTo(overlay);
+		
 		for(int j = 0; j < triangleCount; j++) {
-			const Point * ppt[1] = {solutions[i][j]};
-			int npt[] = {3};
-			fillPoly(images[i], ppt, npt, 1, colors[i][j]);
+			fillConvexPoly(overlay, solutions[i][j], 3, colors[i][j]);
+			
+			addWeighted(overlay, alpha, images[i], 1 - alpha, 0, images[i]);
 		}
-	}
+	}*/
+	
+	for(int i = 0; i < populationSize; i++)
+		renderer->render(solutions[i], colors[i], triangleCount, images[i]);
 }
 
 
-void Population::fitness(Mat& target) {	
+void Population::fitness(Mat& target) {
 	worst = 0;
 	best = LLONG_MAX;
 	bestIndex = 0;
-	
+
 	Mat temp;
 	for(int i = 0; i < populationSize; i++) {
-//		grades[i] = 0;
-//		for(int j = 0; j < rows; j++) {
-//			for(int k = 0; k < cols; k++) {
-//				grades[i] += abs(target.at<Vec3b>(j, k)[0] - images[i].at<Vec3b>(j, k)[0]);
-//				grades[i] += abs(target.at<Vec3b>(j, k)[1] - images[i].at<Vec3b>(j, k)[1]);
-//				grades[i] += abs(target.at<Vec3b>(j, k)[2] - images[i].at<Vec3b>(j, k)[2]);
-//			}
-//		}
-            absdiff(target, images[i], temp);
-            Scalar s = sum(temp);
-            grades[i] = s[0] + s[1] + s[2];
-            
+		absdiff(target, images[i], temp);
+		Scalar s = sum(temp);
+		grades[i] = s[0] + s[1] + s[2];
+
 		if(grades[i] > worst)
 			worst = grades[i];
-		
-		if (grades[i] < best) {
+
+		if(grades[i] < best) {
 			bestIndex = i;
 			best = grades[i];
 		}
 	}
-	
+
 	for(int i = 0; i < populationSize; i++) {
 		//printf("%d: %lld\n", i, grades[i]);
 		grades[i] = worst - grades[i];
@@ -131,15 +139,15 @@ void Population::selectionRoulette() {
 		selected[i] = false;
 		sum += grades[i];
 	}
-	
-	if (sum == 0) {
+
+	if(sum == 0) {
 		printf("select: sum was 0\n");
 		//return; // FIXME
 	}
 
 	for(int i = 0; i < populationSize; ++i)
 		normGrades[i].set((double)grades[i] / sum, i);
-	
+
 	// Sort
 	std::sort(normGrades, normGrades + populationSize, NormalizedGrade::descending);
 
@@ -155,7 +163,7 @@ void Population::selectionRoulette() {
 	int parentsAmount = floor(populationSize * selectionRate);
 	for(int i = 0; i < parentsAmount; i++) {
 		double R = rng.uniform(0.0, 1.0);
-		
+
 		int j = 0;
 		for(; j < populationSize; ++j) {
 			if(selected[ normGrades[j].getID() ])
@@ -164,13 +172,13 @@ void Population::selectionRoulette() {
 			if(normGrades[j].getAccumulated() > R)
 				break;
 		}
-		
+
 		if(j == populationSize) {
 			j = 0;
-			while (selected[ normGrades[j].getID() ])
+			while(selected[ normGrades[j].getID() ])
 				j++;
 		}
-		
+
 		selected[ normGrades[j].getID() ] = true;
 	}
 }
@@ -216,25 +224,26 @@ void Population::mutation() {
 	for(int i = 0; i < populationSize; i++) {
 		if(rng.uniform(0, 100) >= mutationChance)
 			continue;
-		
+
 		for(int j = 0; j < triangleCount; j++) {
+			if(rng.uniform(0, 100) >= mutTriChance)
+				continue;
+
 			for(int k = 0; k < 3; k++) {
-				if(rng.uniform(0, 100) < 90) {
-					int r1 = (rng.uniform(1, cols * 2) - cols) / 10;
+				if(rng.uniform(0, 2)) {
+					int r1 = (rng.uniform(1, cols * 2) - cols) / 20;
 
 					if(solutions[i][j][k].x + r1 < cols
 					&& solutions[i][j][k].x + r1 > 0)
 						solutions[i][j][k].x += r1;
 
-					int r2 = (rng.uniform(1, rows * 2) - rows) / 10;
+					int r2 = (rng.uniform(1, rows * 2) - rows) / 20;
 
 					if(solutions[i][j][k].y + r2 < rows
 					&& solutions[i][j][k].y + r2 > 0)
 						solutions[i][j][k].y += r2;
-				}
-
-				if(rng.uniform(0, 100) < 90) {
-					int r3 = (rng.uniform(1, 255 * 2) - 255) / 10;
+				} else {
+					int r3 = (rng.uniform(1, 255 * 2) - 255) / 20;
 
 					if(colors[i][j][k] + r3 < 255
 					&& colors[i][j][k] + r3 > 0)
