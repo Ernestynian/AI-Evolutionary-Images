@@ -104,6 +104,7 @@
           <linkerLibItems>
             <linkerOptionItem>`pkg-config --libs opencv`</linkerOptionItem>
           </linkerLibItems>
+          <commandLine>-lGLU -lGL -lX11</commandLine>
         </linkerTool>
       </compileType>
       <item path="Cat.jpg" ex="false" tool="3" flavor2="0">

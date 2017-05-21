@@ -8,11 +8,13 @@ using namespace cv;
 class Renderer {
 public:
 	Renderer(int width, int height);
-	void prepareOpenGL(int width, int height);
+	void prepareOpenGL();
 	
 	void render(Point** v, Scalar* c, int tris, Mat& out);
 	
 private:
+	double width;
+	double height;
 };
 
 #endif /* RENDERER_H */

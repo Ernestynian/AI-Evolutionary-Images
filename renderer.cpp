@@ -84,18 +84,21 @@ Renderer::Renderer(int width, int height) {
 		}
 	}
 
-	prepareOpenGL(width, height);
+	this->width  = width * 0.5;
+	this->height = height * 0.5;
+	
+	prepareOpenGL();
 }
 
 
-void Renderer::prepareOpenGL(int width, int height) {
+void Renderer::prepareOpenGL() {
 	glEnable(GL_DEPTH_TEST);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthMask(false);
 
-	glViewport(0, 0, width, height);
+	glViewport(0, 0, (int)width * 2, (int)height * 2);
 
 	glClearColor(0, 0, 0, 0);
 
@@ -113,12 +116,12 @@ void Renderer::render(Point** v, Scalar* c, int tris, Mat& out) {
 				  c[j][2] / 255.0,
 				  0.5);
 
-		glVertex3f(v[j][0].x / 150.0 - 1.0,
-				   v[j][0].y / 150.0 - 1.0, 0);
-		glVertex3f(v[j][1].x / 150.0 - 1.0,
-				   v[j][1].y / 150.0 - 1.0, 0);
-		glVertex3f(v[j][2].x / 150.0 - 1.0,
-				   v[j][2].y / 150.0 - 1.0, 0);
+		glVertex3f(v[j][0].x / width  - 1.0,
+				   v[j][0].y / height - 1.0, 0);
+		glVertex3f(v[j][1].x / width  - 1.0,
+				   v[j][1].y / height - 1.0, 0);
+		glVertex3f(v[j][2].x / width  - 1.0,
+				   v[j][2].y / height - 1.0, 0);
 	}
 	glEnd();
 
