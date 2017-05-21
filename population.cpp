@@ -74,9 +74,7 @@ void Population::createImages() {
 }
 
 
-void Population::fitness(Mat& target) {
-	createImages();
-	
+void Population::fitness(Mat& target) {	
 	worst = 0;
 	best = LLONG_MAX;
 	bestIndex = 0;
@@ -108,8 +106,6 @@ void Population::fitness(Mat& target) {
 		//printf("%d: %lld\n", i, grades[i]);
 		grades[i] = worst - grades[i];
 	}
-	
-	best = grades[bestIndex];
 }
 
 
@@ -119,7 +115,7 @@ Mat Population::topResult() {
 
 
 unsigned long long Population::topFitness() {
-	return best + worst;
+	return grades[bestIndex] + worst;
 }
 
 
@@ -144,7 +140,7 @@ void Population::selectionRoulette() {
 	for(int i = 0; i < populationSize; ++i)
 		normGrades[i].set((double)grades[i] / sum, i);
 	
-	// Sort - is this required to work? or just drains CPU
+	// Sort
 	std::sort(normGrades, normGrades + populationSize, NormalizedGrade::descending);
 
 	// Calculate accumulated
