@@ -22,6 +22,14 @@ CND_ARTIFACT_PATH_Release=dist/Release/GNU-Linux/projekt
 CND_PACKAGE_DIR_Release=dist/Release/GNU-Linux/package
 CND_PACKAGE_NAME_Release=projekt.tar
 CND_PACKAGE_PATH_Release=dist/Release/GNU-Linux/package/projekt.tar
+# Release_Rocik configuration
+CND_PLATFORM_Release_Rocik=GNU-Linux
+CND_ARTIFACT_DIR_Release_Rocik=dist/Release_Rocik/GNU-Linux
+CND_ARTIFACT_NAME_Release_Rocik=projekt
+CND_ARTIFACT_PATH_Release_Rocik=dist/Release_Rocik/GNU-Linux/projekt
+CND_PACKAGE_DIR_Release_Rocik=dist/Release_Rocik/GNU-Linux/package
+CND_PACKAGE_NAME_Release_Rocik=projekt.tar
+CND_PACKAGE_PATH_Release_Rocik=dist/Release_Rocik/GNU-Linux/package/projekt.tar
 #
 # include compiler specific variables
 #

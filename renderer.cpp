@@ -19,7 +19,7 @@ static glXMakeContextCurrentARBProc glXMakeContextCurrentARB = 0;
 
 
 // source: https://sidvind.com/wiki/Opengl/windowless
-Renderer::Renderer(int width, int height) {
+Renderer::Renderer(int width, int height) {	
 	static int visual_attribs[] = {
 		None
 	};
@@ -84,8 +84,8 @@ Renderer::Renderer(int width, int height) {
 		}
 	}
 
-	this->width  = width * 0.5;
-	this->height = height * 0.5;
+	this->width  = width;
+	this->height = height;
 	
 	prepareOpenGL();
 }
@@ -98,7 +98,7 @@ void Renderer::prepareOpenGL() {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthMask(false);
 
-	glViewport(0, 0, (int)width * 2, (int)height * 2);
+	glViewport(0, 0, width, height);
 
 	glClearColor(0, 0, 0, 0);
 
@@ -106,22 +106,16 @@ void Renderer::prepareOpenGL() {
 }
 
 
-void Renderer::render(Point** v, Scalar* c, int tris, Mat& out) {
+void Renderer::render(Point2f** v, Scalar* c, int tris, Mat& out) {
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glBegin(GL_TRIANGLES);
 	for(int j = 0; j < tris; j++) {
-		glColor4f(c[j][0] / 255.0,
-				  c[j][1] / 255.0,
-				  c[j][2] / 255.0,
-				  0.5);
+		glColor4f(c[j][0], c[j][1], c[j][2], c[j][3]);
 
-		glVertex3f(v[j][0].x / width  - 1.0,
-				   v[j][0].y / height - 1.0, 0);
-		glVertex3f(v[j][1].x / width  - 1.0,
-				   v[j][1].y / height - 1.0, 0);
-		glVertex3f(v[j][2].x / width  - 1.0,
-				   v[j][2].y / height - 1.0, 0);
+		glVertex2f(v[j][0].x, v[j][0].y);
+		glVertex2f(v[j][1].x, v[j][1].y);
+		glVertex2f(v[j][2].x, v[j][2].y);
 	}
 	glEnd();
 

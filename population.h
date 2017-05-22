@@ -11,6 +11,7 @@
 
 using namespace cv;
 
+
 class Population {
 public:
 	Population(int population_size, int triangle_count, int cols, int rows);
@@ -29,14 +30,14 @@ public:
 private:
 	Point** copySolution(Point** solution);
 	
-	const double selectionRate = 0.15;
-	const int    mutationChance = 5;
-	const int    mutTriChance = 40;
+	const double selectionRate  = 0.15;
+	const double mutationChance = 0.01;
+	const float  mutationSize   = 0.10;
 
 	Renderer* renderer;
 	
 	Scalar** colors;
-	Point*** solutions;
+	Point2f*** solutions;
 	bool* selected;
 	
 	int cols, rows;

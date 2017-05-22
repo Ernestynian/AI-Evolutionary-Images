@@ -23,6 +23,8 @@ void App::run() {
 		"Cat.jpg",
 	}[0]);
 
+	worstFitness = input.cols * input.rows * 3 * 255;
+	
 	Population population(populationSize, triangleCount,
 						  input.cols, input.rows);
 
@@ -47,17 +49,18 @@ void App::run() {
 		population.fitness(input);
 		high_resolution_clock::time_point t6 = high_resolution_clock::now();
 
-		auto durationSel = duration_cast<microseconds>( t2 - t1 ).count();
+		/*auto durationSel = duration_cast<microseconds>( t2 - t1 ).count();
 		auto durationCro = duration_cast<microseconds>( t3 - t2 ).count();
 		auto durationMut = duration_cast<microseconds>( t4 - t3 ).count();
 		auto durationCre = duration_cast<microseconds>( t5 - t4 ).count();
 		auto durationFit = duration_cast<microseconds>( t6 - t5 ).count();
 		
-		cout << "Sel: "    << std::setw(2) << durationSel
-			 << " | Cro: " << std::setw(3) << durationCro 
-		     << " | Mut: " << std::setw(2) << durationMut
-		     << " | Fit: " << std::setw(5) << durationCre
-		     << " + " << std::setw(4) << durationFit << "\n";
+		cout << "SCM: "
+			 << std::setw(3) << durationSel
+			 << std::setw(5) << durationCro 
+		     << std::setw(4) << durationMut
+		     << std::setw(8) << durationCre
+		     << std::setw(6) << durationFit << "\n";*/
 		
 		unsigned long long currentFitness = population.topFitness();
 		if (currentFitness < bestFitness) {
@@ -90,7 +93,7 @@ void App::drawImages(Mat image1, Mat image2, Mat image3, int pid, unsigned long 
 	sprintf(buffer, "P: %d", pid + 1);
 	putText(dst, buffer, pPos, FONT_HERSHEY_PLAIN, 1.0, white, 1, CV_AA);
 	
-	sprintf(buffer, "F: %lld", fitness);
+	sprintf(buffer, "F: %.2f%", 100.0 * (1.0 - (double)fitness / worstFitness) );
 	putText(dst, buffer, fPos, FONT_HERSHEY_PLAIN, 1.0, white, 1, CV_AA);
 	
 	imshow(windowTitle, dst);

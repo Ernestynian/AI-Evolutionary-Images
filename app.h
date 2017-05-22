@@ -19,9 +19,11 @@ private:
 	Point pPos;
 	Point fPos;
 	
-	const int populations    = 5000;
+	double worstFitness;
 	
-	const int triangleCount  = 50;
+	const int populations    = 50000;
+	
+	const int triangleCount  = 20;
 	const int populationSize = 50;
 	
 	const char* windowTitle = "AI Evolutionary Images";	

@@ -130,5 +130,46 @@
       <item path="renderer.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
+    <conf name="Release_Rocik" type="1">
+      <toolsSet>
+        <compilerSet>default</compilerSet>
+        <dependencyChecking>true</dependencyChecking>
+        <rebuildPropChanged>false</rebuildPropChanged>
+      </toolsSet>
+      <compileType>
+        <ccTool>
+          <developmentMode>0</developmentMode>
+          <architecture>2</architecture>
+        </ccTool>
+        <linkerTool>
+          <linkerLibItems>
+            <linkerOptionItem>`pkg-config --libs opencv`</linkerOptionItem>
+          </linkerLibItems>
+          <commandLine>-lGLU -lGL -lX11</commandLine>
+        </linkerTool>
+      </compileType>
+      <item path="Cat.jpg" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="MonaLisa.jpg" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="app.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="app.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="main.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="normalizedGrade.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="normalizedGrade.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="population.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="population.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="renderer.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="renderer.h" ex="false" tool="3" flavor2="0">
+      </item>
+    </conf>
   </confs>
 </configurationDescriptor>

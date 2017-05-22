@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cstdio>
+#include <opencv2/core.hpp>
 
 #include "population.h"
 
@@ -12,7 +13,7 @@ Population::Population(int populationSize, int triangleCount, int cols, int rows
 	this->rows = rows;
 
 	grades = new unsigned long long[populationSize];
-	solutions = new Point**[populationSize];
+	solutions = new Point2f**[populationSize];
 	colors = new Scalar*[populationSize];
 	selected = new bool[populationSize];
 
@@ -21,22 +22,29 @@ Population::Population(int populationSize, int triangleCount, int cols, int rows
 	images = new Mat[populationSize]; //(rows, cols, CV_8UC3, Scalar(0, 0, 0));
 
 	for(int i = 0; i < populationSize; i++) {
-		solutions[i] = new Point*[triangleCount];
+		solutions[i] = new Point2f*[triangleCount];
 		colors[i] = new Scalar[triangleCount];
 		images[i] = Mat(rows, cols, CV_8UC3, Scalar(0, 0, 0));
 
 		for(int j = 0; j < triangleCount; j++) {
-			colors[i][j] = Scalar(rng.uniform(0, 255),
-								  rng.uniform(0, 255),
-								  rng.uniform(0, 255));
+			colors[i][j] = Scalar(rng.uniform(0.f, 1.f),
+								  rng.uniform(0.f, 1.f),
+								  rng.uniform(0.f, 1.f),
+								  rng.uniform(0.f, 1.f));
 
-			solutions[i][j] = new Point[3];
-			solutions[i][j][0].x = rng.uniform(0, cols);
-			solutions[i][j][0].y = rng.uniform(0, rows);
-			solutions[i][j][1].x = rng.uniform(0, cols);
-			solutions[i][j][1].y = rng.uniform(0, rows);
-			solutions[i][j][2].x = rng.uniform(0, cols);
-			solutions[i][j][2].y = rng.uniform(0, rows);
+			solutions[i][j] = new Point2f[3];
+			float sign = rng.uniform(0, 2) ? 1.f : -1.f;
+			solutions[i][j][0].x = rng.uniform(0.f, 1.f) * sign;
+			sign = rng.uniform(0, 2) ? 1.f : -1.f;
+			solutions[i][j][0].y = rng.uniform(0.f, 1.f) * sign;
+			sign = rng.uniform(0, 2) ? 1.f : -1.f;
+			solutions[i][j][1].x = rng.uniform(0.f, 1.f) * sign;
+			sign = rng.uniform(0, 2) ? 1.f : -1.f;
+			solutions[i][j][1].y = rng.uniform(0.f, 1.f) * sign;
+			sign = rng.uniform(0, 2) ? 1.f : -1.f;
+			solutions[i][j][2].x = rng.uniform(0.f, 1.f) * sign;
+			sign = rng.uniform(0, 2) ? 1.f : -1.f;
+			solutions[i][j][2].y = rng.uniform(0.f, 1.f) * sign;
 		}
 	}
 	
@@ -134,16 +142,13 @@ void Population::selectionStochastic() {
 
 void Population::selectionRoulette() {
 	// Normalize
-	double sum = 0.0;
+	double sum = 0.f;
 	for(int i = 0; i < populationSize; ++i) {
 		selected[i] = false;
 		sum += grades[i];
 	}
 
-	if(sum == 0) {
-		printf("select: sum was 0\n");
-		//return; // FIXME
-	}
+	assert(sum != 0);
 
 	for(int i = 0; i < populationSize; ++i)
 		normGrades[i].set((double)grades[i] / sum, i);
@@ -155,14 +160,14 @@ void Population::selectionRoulette() {
 	for(int i = 1; i < populationSize; ++i)
 		normGrades[i].addAccumulated(normGrades[i - 1].getAccumulated());
 
-	// There are two 1.0 because one of the grades is always 0
+	// There are two 1.f because one of the grades is always 0
 	//for (int i = 0; i < populationSize; ++i)
 	//    printf("%d acc: %f\n", i, normGrades[i].getAccumulated());
 
 	// Choose
 	int parentsAmount = floor(populationSize * selectionRate);
 	for(int i = 0; i < parentsAmount; i++) {
-		double R = rng.uniform(0.0, 1.0);
+		double R = rng.uniform(0.f, 1.f);
 
 		int j = 0;
 		for(; j < populationSize; ++j) {
@@ -187,7 +192,7 @@ void Population::selectionRoulette() {
 void Population::crossover() {
 	int lastNotSelected = 0;
 
-	int childsAmount = ceil(populationSize * (1.0 - selectionRate));
+	int childsAmount = ceil(populationSize * (1.f - selectionRate));
 	for(int i = 0; i < childsAmount; i++) {
 		int a, b; // parents
 		do {
@@ -199,13 +204,14 @@ void Population::crossover() {
 		while(selected[lastNotSelected])
 			lastNotSelected++;
 
-		int bStart = rng.uniform(0, triangleCount);
-		int bEnd = rng.uniform(bStart + 1, triangleCount);
-
-		//printf("%d is child of %d %d (range %d -> %d)\n", lastNotSelected, a, b, bStart, bEnd);
+		//int bStart = rng.uniform(0, int(triangleCount * 0.5));
+		//int bEnd = rng.uniform(bStart + 1, triangleCount);
+		//int bEnd = bStart + triangleCount * 0.5;
+		
+		//printf("%d is child of %2d %2d (range %2d -> %2d)\n", lastNotSelected, a, b, bStart, bEnd);
 
 		for(int j = 0; j < triangleCount; ++j) {
-			int src = (j >= bStart && j < bEnd) ? b : a;
+			int src = rng.uniform(0, 2) ? b : a;
 
 			for(int k = 0; k < 3; ++k) {
 				solutions[lastNotSelected][j][k].x = solutions[src][j][k].x;
@@ -221,35 +227,79 @@ void Population::crossover() {
 
 
 void Population::mutation() {
-	for(int i = 0; i < populationSize; i++) {
-		if(rng.uniform(0, 100) >= mutationChance)
-			continue;
-
-		for(int j = 0; j < triangleCount; j++) {
-			if(rng.uniform(0, 100) >= mutTriChance)
+	for(int i = 0; i < populationSize; i++) {		
+		for (int t = 0; t < triangleCount * mutationSize; ++t) {
+			if(rng.uniform(0.0, 1.0) > mutationChance)
 				continue;
+			
+			int j = rng.uniform(0, triangleCount);
 
-			for(int k = 0; k < 3; k++) {
-				if(rng.uniform(0, 2)) {
-					int r1 = (rng.uniform(1, cols * 2) - cols) / 20;
-
-					if(solutions[i][j][k].x + r1 < cols
-					&& solutions[i][j][k].x + r1 > 0)
-						solutions[i][j][k].x += r1;
-
-					int r2 = (rng.uniform(1, rows * 2) - rows) / 20;
-
-					if(solutions[i][j][k].y + r2 < rows
-					&& solutions[i][j][k].y + r2 > 0)
-						solutions[i][j][k].y += r2;
-				} else {
-					int r3 = (rng.uniform(1, 255 * 2) - 255) / 20;
-
-					if(colors[i][j][k] + r3 < 255
-					&& colors[i][j][k] + r3 > 0)
-						colors[i][j][k] += r3;
+			/*if (rng.uniform(0, 2)) {
+				switch (rng.uniform(0, 3)) {
+				case 0: {
+					int k = rng.uniform(0, 3);
+					int sign = rng.uniform(0, 2) ? 1 : -1;
+					solutions[i][j][k].x = rng.uniform(0.f, 1.f) * sign;
+					break;
 				}
-			}
+				case 1: {
+					int k = rng.uniform(0, 3);
+					int sign = rng.uniform(0, 2) ? 1 : -1;
+					solutions[i][j][k].y = rng.uniform(0.f, 1.f) * sign;
+					break;
+				}
+				case 2: {
+					int k = rng.uniform(0, 4);
+
+					colors[i][j][k] = rng.uniform(0.f, 1.f);
+
+					break;
+				}
+				}
+
+			} else {*/
+				int sign = rng.uniform(0, 2) ? 1 : -1;
+				float r1 = rng.uniform(0.0f, mutationSize) * sign;
+
+				switch (rng.uniform(0, 3)) {
+				case 0: {
+					int k = rng.uniform(0, 3);
+
+					solutions[i][j][k].x += r1;
+					
+					if(solutions[i][j][k].x > 1.0)
+						solutions[i][j][k].x = 1.0;
+					else if(solutions[i][j][k].x < 0.0)
+						solutions[i][j][k].x = 0.0;
+						
+					break;
+				}
+				case 1: {
+					int k = rng.uniform(0, 3);
+
+					solutions[i][j][k].y += r1;
+					
+					if(solutions[i][j][k].y > 1.0)
+						solutions[i][j][k].y = 1.0;
+					else if(solutions[i][j][k].y < 0.0)
+						solutions[i][j][k].y = 0.0;
+
+					break;
+				}
+				case 2: {
+					int k = rng.uniform(0, 4);
+
+					colors[i][j][k] += r1;
+					
+					if(colors[i][j][k] > 1.0)
+						colors[i][j][k] = 1.0;
+					else if(colors[i][j][k] < 0.0)
+						colors[i][j][k] = 0.0;
+
+					break;
+				}
+				}
+			//}
 		}
 	}
 }

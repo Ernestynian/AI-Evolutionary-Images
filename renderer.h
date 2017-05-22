@@ -10,11 +10,11 @@ public:
 	Renderer(int width, int height);
 	void prepareOpenGL();
 	
-	void render(Point** v, Scalar* c, int tris, Mat& out);
+	void render(Point2f** v, Scalar* c, int tris, Mat& out);
 	
 private:
-	double width;
-	double height;
+	int width;
+	int height;
 };
 
 #endif /* RENDERER_H */
