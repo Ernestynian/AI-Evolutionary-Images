@@ -1,10 +1,12 @@
 #ifndef POPULATION_H
 #define POPULATION_H
 
+#include <random>
+#include <ctime>
+
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
-#include <time.h>
 
 #include "normalizedGrade.h"
 #include "renderer.h"
@@ -21,6 +23,7 @@ public:
 	void selectionRoulette();
 	void crossover();
 	void mutation();
+	void mutationGauss();
 	void fitness(Mat& target);
 	
 	void createImages();
@@ -38,7 +41,11 @@ private:
 	
 	Scalar** colors;
 	Point2f*** solutions;
+	// parents
+	int parentsAmount;
 	bool* selected;
+	Scalar** p_colors;
+	Point2f*** p_solutions;
 	
 	int cols, rows;
 	int populationSize;
@@ -51,6 +58,7 @@ private:
 	NormalizedGrade* normGrades;
 	
 	RNG rng;
+	std::random_device rd;
 };
 
 #endif /* POPULATION_H */

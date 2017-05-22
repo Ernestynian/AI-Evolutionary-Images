@@ -4,6 +4,8 @@
 
 #include "population.h"
 
+#define RENDER_GPU
+
 
 Population::Population(int populationSize, int triangleCount, int cols, int rows)
 : rng(time(NULL)) {
@@ -15,16 +17,25 @@ Population::Population(int populationSize, int triangleCount, int cols, int rows
 	grades = new unsigned long long[populationSize];
 	solutions = new Point2f**[populationSize];
 	colors = new Scalar*[populationSize];
+	
+	parentsAmount = floor(populationSize * selectionRate);
 	selected = new bool[populationSize];
+	p_solutions = new Point2f**[parentsAmount];
+	p_colors = new Scalar*[parentsAmount];
 
 	normGrades = new NormalizedGrade[populationSize];
 
-	images = new Mat[populationSize]; //(rows, cols, CV_8UC3, Scalar(0, 0, 0));
+	images = new Mat[populationSize];
 
 	for(int i = 0; i < populationSize; i++) {
 		solutions[i] = new Point2f*[triangleCount];
 		colors[i] = new Scalar[triangleCount];
 		images[i] = Mat(rows, cols, CV_8UC3, Scalar(0, 0, 0));
+		
+		if (i < parentsAmount) {
+			p_solutions[i] = new Point2f*[triangleCount];
+			p_colors[i] = new Scalar[triangleCount];
+		}
 
 		for(int j = 0; j < triangleCount; j++) {
 			colors[i][j] = Scalar(rng.uniform(0.0f, 1.f),
@@ -35,6 +46,9 @@ Population::Population(int populationSize, int triangleCount, int cols, int rows
 			// TODO: center point of spawn, spread them
 			//float x = rng.uniform(0.f, 2.f) - 1.0f;
 			//float y = rng.uniform(0.f, 2.f) - 1.0f;
+			
+			if (i < parentsAmount)
+				p_solutions[i][j] = new Point2f[3];
 			
 			solutions[i][j] = new Point2f[3];
 			solutions[i][j][0].x = rng.uniform(0.f, 2.f) - 1.0f;
@@ -73,10 +87,13 @@ Population::~Population() {
 }
 
 
-void Population::createImages() {
-	// could be used as a second trivial method
-	
-	/*int wh = cols / 2;
+void Population::createImages() {	
+#ifdef RENDER_GPU
+	for(int i = 0; i < populationSize; i++)
+		renderer->render(solutions[i], colors[i], triangleCount, images[i]);
+#else
+	// TODO: move to renderer
+	int wh = cols / 2;
 	int hh = rows / 2;
 	
 	Mat empty = Mat(rows, cols, CV_8UC3, Scalar(0, 0, 0));
@@ -99,10 +116,8 @@ void Population::createImages() {
 			
 			addWeighted(overlay, alpha, images[i], 1 - alpha, 0, images[i]);
 		}
-	}*/
-	
-	for(int i = 0; i < populationSize; i++)
-		renderer->render(solutions[i], colors[i], triangleCount, images[i]);
+	}
+#endif
 }
 
 
@@ -154,6 +169,7 @@ void Population::selectionStochastic() {
 }
 
 
+// There are two 1.f because one of the grades is always 0
 void Population::selectionRoulette() {
 	// Normalize
 	double sum = 0.f;
@@ -162,7 +178,7 @@ void Population::selectionRoulette() {
 		sum += grades[i];
 	}
 
-	assert(sum != 0);
+	//assert(sum != 0);
 
 	for(int i = 0; i < populationSize; ++i)
 		normGrades[i].set((double)grades[i] / sum, i);
@@ -174,12 +190,8 @@ void Population::selectionRoulette() {
 	for(int i = 1; i < populationSize; ++i)
 		normGrades[i].addAccumulated(normGrades[i - 1].getAccumulated());
 
-	// There are two 1.f because one of the grades is always 0
-	//for (int i = 0; i < populationSize; ++i)
-	//    printf("%d acc: %f\n", i, normGrades[i].getAccumulated());
-
 	// Choose
-	int parentsAmount = floor(populationSize * selectionRate);
+	//int parentsAmount = floor(populationSize * selectionRate);
 	for(int i = 0; i < parentsAmount; i++) {
 		double R = rng.uniform(0.f, 1.f);
 
@@ -197,13 +209,47 @@ void Population::selectionRoulette() {
 			while(selected[ normGrades[j].getID() ])
 				j++;
 		}
-
-		selected[ normGrades[j].getID() ] = true;
+		
+		int ID = normGrades[j].getID();
+		selected[ID] = true;
+		
+		for(j = 0; j < triangleCount; ++j) {
+			for(int k = 0; k < 3; ++k) {
+				p_solutions[i][j][k] = solutions[ID][j][k];
+				p_colors[i][j][k] = colors[ID][j][k];
+			}
+			p_colors[i][j][3] = colors[ID][j][3];
+		}
 	}
 }
 
 
 void Population::crossover() {
+	// create new population from parents
+	for(int i = 0; i < populationSize; i++) {
+		int a, b; // parents
+		do {
+			a = rng.uniform(0, parentsAmount);
+			b = rng.uniform(0, parentsAmount);
+		} while(a == b);
+
+		// Find empty slot for crossover child
+		for(int j = 0; j < triangleCount; ++j) {
+			int src = rng.uniform(0, 2) ? b : a;
+
+			for(int k = 0; k < 3; ++k) {
+				solutions[i][j][k] = p_solutions[src][j][k];
+
+				colors[i][j][k] = p_colors[src][j][k];
+			}
+			
+			colors[i][j][3] = p_colors[src][j][3];
+		}
+	}
+}
+
+
+/*void Population::crossover() {
 	int lastNotSelected = 0;
 
 	int childsAmount = ceil(populationSize * (1.f - selectionRate));
@@ -222,8 +268,7 @@ void Population::crossover() {
 			int src = rng.uniform(0, 2) ? b : a;
 
 			for(int k = 0; k < 3; ++k) {
-				solutions[lastNotSelected][j][k].x = solutions[src][j][k].x;
-				solutions[lastNotSelected][j][k].y = solutions[src][j][k].y;
+				solutions[lastNotSelected][j][k] = solutions[src][j][k];
 
 				colors[lastNotSelected][j][k] = colors[src][j][k];
 			}
@@ -233,7 +278,7 @@ void Population::crossover() {
 
 		lastNotSelected++;
 	}
-}
+}*/
 
 
 void Population::mutation() {
@@ -281,6 +326,54 @@ void Population::mutation() {
 				if(colors[i][j][k] > 1.0)
 					colors[i][j][k] = 1.0;
 				else if(colors[i][j][k] < 0.0)
+					colors[i][j][k] = 0.0;
+			}
+		}
+	}
+}
+
+
+void Population::mutationGauss() {
+	std::mt19937 e2(rd());
+	
+	for(int i = 0; i < populationSize; i++) {		
+		for (int j = 0; j < triangleCount; ++j) {		
+			if(rng.uniform(0.0, 1.0) > mutationChance)
+				continue;
+			
+			if(rng.uniform(0, 2)) {
+				int k = rng.uniform(0, 3);
+				
+				if (rng.uniform(0, 2)) {
+					std::normal_distribution<float> dist(solutions[i][j][k].x, 1.0);
+					float r1 = dist(e2);
+					
+					solutions[i][j][k].x = r1;
+					if (solutions[i][j][k].x > 1.0)
+						solutions[i][j][k].x = 1.0;
+					else if (solutions[i][j][k].x < -1.0)
+						solutions[i][j][k].x = -1.0;
+				} else {
+					std::normal_distribution<float> dist(solutions[i][j][k].y, 1.0);
+					float r1 = dist(e2);
+					
+					solutions[i][j][k].y = r1;
+					if (solutions[i][j][k].y > 1.0)
+						solutions[i][j][k].y = 1.0;
+					else if (solutions[i][j][k].y < -1.0)
+						solutions[i][j][k].y = -1.0;
+				}				
+			} else {
+				int k = rng.uniform(0, 4);
+
+				std::normal_distribution<float> dist(colors[i][j][k], 0.5);
+				float r1 = dist(e2);
+
+				colors[i][j][k] = r1;
+				
+				if (colors[i][j][k] > 1.0)
+					colors[i][j][k] = 1.0;
+				else if (colors[i][j][k] < 0.0)
 					colors[i][j][k] = 0.0;
 			}
 		}

@@ -92,7 +92,7 @@ Renderer::Renderer(int width, int height) {
 
 
 void Renderer::prepareOpenGL() {
-	glEnable(GL_DEPTH_TEST);
+	//glEnable(GL_DEPTH_TEST); // TODO: test
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -120,7 +120,8 @@ void Renderer::prepareOpenGL() {
 void Renderer::render(Point2f** v, Scalar* c, int tris, Mat& out) {
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	glScalef(1, -1, 1);
+	// glScalef won't work - tested
+	// no need to flip matrix either
 	
 	glBegin(GL_TRIANGLES);
 	for(int j = 0; j < tris; j++) {
