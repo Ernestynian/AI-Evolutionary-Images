@@ -103,12 +103,25 @@ void Renderer::prepareOpenGL() {
 	glClearColor(0, 0, 0, 0);
 
 	glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
+	
+	//////////
+	
+	/*GLuint fbo, render_buf;
+	glGenFramebuffers(1,&fbo);
+	glGenRenderbuffers(1,&render_buf);
+	glBindRenderbuffer(render_buf);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_BGRA8, width, height);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, render_buf);*/
+
 }
 
 
 void Renderer::render(Point2f** v, Scalar* c, int tris, Mat& out) {
 	glClear(GL_COLOR_BUFFER_BIT);
 
+	glScalef(1, -1, 1);
+	
 	glBegin(GL_TRIANGLES);
 	for(int j = 0; j < tris; j++) {
 		glColor4f(c[j][0], c[j][1], c[j][2], c[j][3]);
@@ -123,5 +136,15 @@ void Renderer::render(Point2f** v, Scalar* c, int tris, Mat& out) {
 
 	// Copy OpenGL buffer data
 	glReadPixels(0, 0, out.cols, out.rows, GL_BGR, GL_UNSIGNED_BYTE, out.data);
-	flip(out, out, 0);
+	
+	/*GLuint pbo;
+	glGenBuffers(1,&pbo);
+	glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
+	glBufferData(GL_PIXEL_PACK_BUFFER, width*height*4, NULL, GL_DYNAMIC_READ);
+	
+	glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
+	glReadPixels(0,0,width,height,GL_BGRA,GL_UNSIGNED_BYTE,0); // 0 instead of a pointer, it is now an offset in the buffer.
+	//DO SOME OTHER STUFF (otherwise this is a waste of your time)
+	glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo); //Might not be necessary...
+	pixel_data = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);*/
 }

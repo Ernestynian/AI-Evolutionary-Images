@@ -30,7 +30,7 @@ Population::Population(int populationSize, int triangleCount, int cols, int rows
 			colors[i][j] = Scalar(rng.uniform(0.f, 1.f),
 								  rng.uniform(0.f, 1.f),
 								  rng.uniform(0.f, 1.f),
-								  rng.uniform(0.f, 1.f));
+								  rng.uniform(0.2f, 1.f));
 
 			solutions[i][j] = new Point2f[3];
 			float sign = rng.uniform(0, 2) ? 1.f : -1.f;
@@ -47,6 +47,7 @@ Population::Population(int populationSize, int triangleCount, int cols, int rows
 			solutions[i][j][2].y = rng.uniform(0.f, 1.f) * sign;
 		}
 	}
+	
 	
 	renderer = new Renderer(cols, rows);
 }
@@ -75,7 +76,10 @@ Population::~Population() {
 
 
 void Population::createImages() {
-	/* could be used as a second trivial method
+	// could be used as a second trivial method
+	
+	/*int wh = cols / 2;
+	int hh = rows / 2;
 	
 	Mat empty = Mat(rows, cols, CV_8UC3, Scalar(0, 0, 0));
 	Mat overlay = Mat(rows, cols, CV_8UC3, Scalar(0, 0, 0));
@@ -87,7 +91,13 @@ void Population::createImages() {
 		empty.copyTo(overlay);
 		
 		for(int j = 0; j < triangleCount; j++) {
-			fillConvexPoly(overlay, solutions[i][j], 3, colors[i][j]);
+			Point p[] = {
+				Point(solutions[i][j][0].x * wh + wh, solutions[i][j][0].y * hh + hh),
+				Point(solutions[i][j][1].x * wh + wh, solutions[i][j][1].y * hh + hh),
+				Point(solutions[i][j][2].x * wh + wh, solutions[i][j][2].y * hh + hh),
+			};
+			Scalar c = Scalar(colors[i][j][0] * 255.0, colors[i][j][1] * 255.0, colors[i][j][2] * 255.0);
+			fillConvexPoly(overlay, p, 3, c);
 			
 			addWeighted(overlay, alpha, images[i], 1 - alpha, 0, images[i]);
 		}
@@ -105,7 +115,7 @@ void Population::fitness(Mat& target) {
 
 	Mat temp;
 	for(int i = 0; i < populationSize; i++) {
-		absdiff(target, images[i], temp);
+		absdiff(images[i], target, temp);
 		Scalar s = sum(temp);
 		grades[i] = s[0] + s[1] + s[2];
 
@@ -148,7 +158,7 @@ void Population::selectionRoulette() {
 		sum += grades[i];
 	}
 
-	assert(sum != 0);
+	//assert(sum != 0);
 
 	for(int i = 0; i < populationSize; ++i)
 		normGrades[i].set((double)grades[i] / sum, i);
@@ -228,78 +238,51 @@ void Population::crossover() {
 
 void Population::mutation() {
 	for(int i = 0; i < populationSize; i++) {		
-		for (int t = 0; t < triangleCount * mutationSize; ++t) {
-			if(rng.uniform(0.0, 1.0) > mutationChance)
-				continue;
-			
-			int j = rng.uniform(0, triangleCount);
-
-			/*if (rng.uniform(0, 2)) {
-				switch (rng.uniform(0, 3)) {
-				case 0: {
-					int k = rng.uniform(0, 3);
-					int sign = rng.uniform(0, 2) ? 1 : -1;
-					solutions[i][j][k].x = rng.uniform(0.f, 1.f) * sign;
-					break;
-				}
-				case 1: {
-					int k = rng.uniform(0, 3);
-					int sign = rng.uniform(0, 2) ? 1 : -1;
-					solutions[i][j][k].y = rng.uniform(0.f, 1.f) * sign;
-					break;
-				}
-				case 2: {
-					int k = rng.uniform(0, 4);
-
-					colors[i][j][k] = rng.uniform(0.f, 1.f);
-
-					break;
-				}
-				}
-
-			} else {*/
+		for (int j = 0; j < triangleCount; ++j) {
+			for (int k = 0; k < 3; ++k) {
+				if(rng.uniform(0.0, 1.0) > mutationChance)
+					continue;
+				
 				int sign = rng.uniform(0, 2) ? 1 : -1;
 				float r1 = rng.uniform(0.0f, mutationSize) * sign;
 
-				switch (rng.uniform(0, 3)) {
-				case 0: {
-					int k = rng.uniform(0, 3);
+				solutions[i][j][k].x += r1;
 
-					solutions[i][j][k].x += r1;
-					
-					if(solutions[i][j][k].x > 1.0)
-						solutions[i][j][k].x = 1.0;
-					else if(solutions[i][j][k].x < 0.0)
-						solutions[i][j][k].x = 0.0;
-						
-					break;
-				}
-				case 1: {
-					int k = rng.uniform(0, 3);
+				if(solutions[i][j][k].x > 1.0)
+					solutions[i][j][k].x = 1.0;
+				else if(solutions[i][j][k].x < -1.0)
+					solutions[i][j][k].x = -1.0;
+			}
+			
+			for (int k = 0; k < 3; ++k) {
+				if(rng.uniform(0.0, 1.0) > mutationChance)
+					continue;
+				
+				int sign = rng.uniform(0, 2) ? 1 : -1;
+				float r1 = rng.uniform(0.0f, mutationSize) * sign;
 
-					solutions[i][j][k].y += r1;
-					
-					if(solutions[i][j][k].y > 1.0)
-						solutions[i][j][k].y = 1.0;
-					else if(solutions[i][j][k].y < 0.0)
-						solutions[i][j][k].y = 0.0;
+				solutions[i][j][k].y += r1;
 
-					break;
-				}
-				case 2: {
-					int k = rng.uniform(0, 4);
+				if(solutions[i][j][k].y > 1.0)
+					solutions[i][j][k].y = 1.0;
+				else if(solutions[i][j][k].y < -1.0)
+					solutions[i][j][k].y = -1.0;
+			}
+			
+			for (int k = 0; k < 4; ++k) {
+				if(rng.uniform(0.0, 1.0) > mutationChance)
+					continue;
+				
+				int sign = rng.uniform(0, 2) ? 1 : -1;
+				float r1 = rng.uniform(0.0f, mutationSize) * sign;
 
-					colors[i][j][k] += r1;
-					
-					if(colors[i][j][k] > 1.0)
-						colors[i][j][k] = 1.0;
-					else if(colors[i][j][k] < 0.0)
-						colors[i][j][k] = 0.0;
+				colors[i][j][k] += r1;
 
-					break;
-				}
-				}
-			//}
+				if(colors[i][j][k] > 1.0)
+					colors[i][j][k] = 1.0;
+				else if(colors[i][j][k] < 0.0)
+					colors[i][j][k] = 0.0;
+			}
 		}
 	}
 }

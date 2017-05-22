@@ -49,13 +49,13 @@ void App::run() {
 		population.fitness(input);
 		high_resolution_clock::time_point t6 = high_resolution_clock::now();
 
-		/*auto durationSel = duration_cast<microseconds>( t2 - t1 ).count();
+		auto durationSel = duration_cast<microseconds>( t2 - t1 ).count();
 		auto durationCro = duration_cast<microseconds>( t3 - t2 ).count();
 		auto durationMut = duration_cast<microseconds>( t4 - t3 ).count();
 		auto durationCre = duration_cast<microseconds>( t5 - t4 ).count();
 		auto durationFit = duration_cast<microseconds>( t6 - t5 ).count();
 		
-		cout << "SCM: "
+		/*cout << "SCM: "
 			 << std::setw(3) << durationSel
 			 << std::setw(5) << durationCro 
 		     << std::setw(4) << durationMut
@@ -69,7 +69,7 @@ void App::run() {
 		}
 		
 		drawImages(input, bestImage, population.topResult(), i, bestFitness);
-
+		
 		// Stop when key is pressed
 		if (waitKey(1) == 'q')
 			break;

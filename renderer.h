@@ -1,6 +1,8 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
+#define GL_GLEXT_PROTOTYPES 1
+
 #include <opencv2/opencv.hpp>
 
 using namespace cv;
