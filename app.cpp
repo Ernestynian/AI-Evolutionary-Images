@@ -93,7 +93,7 @@ void App::drawImages(Mat image1, Mat image2, Mat image3, int pid, unsigned long 
 	sprintf(buffer, "P: %d", pid + 1);
 	putText(dst, buffer, pPos, FONT_HERSHEY_PLAIN, 1.0, white, 1, CV_AA);
 	
-	sprintf(buffer, "F: %.2f%", 100.0 * (1.0 - (double)fitness / worstFitness) );
+	sprintf(buffer, "F: %.2f%%", 100.0 * (1.0 - (double)fitness / worstFitness) );
 	putText(dst, buffer, fPos, FONT_HERSHEY_PLAIN, 1.0, white, 1, CV_AA);
 	
 	imshow(windowTitle, dst);

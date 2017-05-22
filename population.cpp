@@ -27,24 +27,22 @@ Population::Population(int populationSize, int triangleCount, int cols, int rows
 		images[i] = Mat(rows, cols, CV_8UC3, Scalar(0, 0, 0));
 
 		for(int j = 0; j < triangleCount; j++) {
-			colors[i][j] = Scalar(rng.uniform(0.f, 1.f),
-								  rng.uniform(0.f, 1.f),
-								  rng.uniform(0.f, 1.f),
+			colors[i][j] = Scalar(rng.uniform(0.0f, 1.f),
+								  rng.uniform(0.0f, 1.f),
+								  rng.uniform(0.0f, 1.f),
 								  rng.uniform(0.2f, 1.f));
-
+			
+			// TODO: center point of spawn, spread them
+			//float x = rng.uniform(0.f, 2.f) - 1.0f;
+			//float y = rng.uniform(0.f, 2.f) - 1.0f;
+			
 			solutions[i][j] = new Point2f[3];
-			float sign = rng.uniform(0, 2) ? 1.f : -1.f;
-			solutions[i][j][0].x = rng.uniform(0.f, 1.f) * sign;
-			sign = rng.uniform(0, 2) ? 1.f : -1.f;
-			solutions[i][j][0].y = rng.uniform(0.f, 1.f) * sign;
-			sign = rng.uniform(0, 2) ? 1.f : -1.f;
-			solutions[i][j][1].x = rng.uniform(0.f, 1.f) * sign;
-			sign = rng.uniform(0, 2) ? 1.f : -1.f;
-			solutions[i][j][1].y = rng.uniform(0.f, 1.f) * sign;
-			sign = rng.uniform(0, 2) ? 1.f : -1.f;
-			solutions[i][j][2].x = rng.uniform(0.f, 1.f) * sign;
-			sign = rng.uniform(0, 2) ? 1.f : -1.f;
-			solutions[i][j][2].y = rng.uniform(0.f, 1.f) * sign;
+			solutions[i][j][0].x = rng.uniform(0.f, 2.f) - 1.0f;
+			solutions[i][j][0].y = rng.uniform(0.f, 2.f) - 1.0f;
+			solutions[i][j][1].x = rng.uniform(0.f, 2.f) - 1.0f;
+			solutions[i][j][1].y = rng.uniform(0.f, 2.f) - 1.0f;
+			solutions[i][j][2].x = rng.uniform(0.f, 2.f) - 1.0f;
+			solutions[i][j][2].y = rng.uniform(0.f, 2.f) - 1.0f;
 		}
 	}
 	
@@ -112,10 +110,16 @@ void Population::fitness(Mat& target) {
 	worst = 0;
 	best = LLONG_MAX;
 	bestIndex = 0;
-
+	
 	Mat temp;
 	for(int i = 0; i < populationSize; i++) {
 		absdiff(images[i], target, temp);
+		/*for(int x = 0; x < temp.rows; ++x) {
+			uchar* p = temp.ptr<uchar>(x);
+			for (int y = 0; y < temp.cols * temp.channels(); ++y) {
+				p[y] *= p[y];
+			}
+		}*/
 		Scalar s = sum(temp);
 		grades[i] = s[0] + s[1] + s[2];
 
@@ -158,7 +162,7 @@ void Population::selectionRoulette() {
 		sum += grades[i];
 	}
 
-	//assert(sum != 0);
+	assert(sum != 0);
 
 	for(int i = 0; i < populationSize; ++i)
 		normGrades[i].set((double)grades[i] / sum, i);
@@ -214,12 +218,6 @@ void Population::crossover() {
 		while(selected[lastNotSelected])
 			lastNotSelected++;
 
-		//int bStart = rng.uniform(0, int(triangleCount * 0.5));
-		//int bEnd = rng.uniform(bStart + 1, triangleCount);
-		//int bEnd = bStart + triangleCount * 0.5;
-		
-		//printf("%d is child of %2d %2d (range %2d -> %2d)\n", lastNotSelected, a, b, bStart, bEnd);
-
 		for(int j = 0; j < triangleCount; ++j) {
 			int src = rng.uniform(0, 2) ? b : a;
 
@@ -229,6 +227,8 @@ void Population::crossover() {
 
 				colors[lastNotSelected][j][k] = colors[src][j][k];
 			}
+			
+			colors[lastNotSelected][j][3] = colors[src][j][3];
 		}
 
 		lastNotSelected++;
@@ -238,7 +238,7 @@ void Population::crossover() {
 
 void Population::mutation() {
 	for(int i = 0; i < populationSize; i++) {		
-		for (int j = 0; j < triangleCount; ++j) {
+		for (int j = 0; j < triangleCount; ++j) {			
 			for (int k = 0; k < 3; ++k) {
 				if(rng.uniform(0.0, 1.0) > mutationChance)
 					continue;
@@ -275,7 +275,7 @@ void Population::mutation() {
 				
 				int sign = rng.uniform(0, 2) ? 1 : -1;
 				float r1 = rng.uniform(0.0f, mutationSize) * sign;
-
+				
 				colors[i][j][k] += r1;
 
 				if(colors[i][j][k] > 1.0)
