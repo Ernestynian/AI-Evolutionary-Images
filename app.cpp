@@ -24,7 +24,8 @@ void App::run() {
 		"mona.jpg"
 	}[ 0 ]);
 
-	worstFitness = input.cols * input.rows * 3 * 255;
+    //should be made conditional in some way
+	worstFitness = (long long)input.cols * (long long)input.rows * 3 * 255 * 255;
 	
 	Population population(populationSize, triangleCount,
 						  input.cols, input.rows);

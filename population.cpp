@@ -132,6 +132,8 @@ void Population::fitness(Mat& target) {
 				p[y] *= p[y];
 			}
 		}*/
+        temp.convertTo(temp, CV_16UC3); //should be made optional in some way
+        temp = temp.mul(temp);          //
 		Scalar s = sum(temp);
 		c_grades[i] = grades[i];
 		grades[i] = s[0] + s[1] + s[2];

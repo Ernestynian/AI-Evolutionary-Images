@@ -19,7 +19,7 @@ private:
 	Point pPos;
 	Point fPos;
 	
-	double worstFitness;
+	long long worstFitness;
 	
 	const int populations    = 50000;
 	
