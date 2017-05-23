@@ -39,22 +39,26 @@ Population::Population(int populationSize, int triangleCount, int cols, int rows
 			colors[i][j] = Scalar(rng.uniform(0.0f, 1.f),
 								  rng.uniform(0.0f, 1.f),
 								  rng.uniform(0.0f, 1.f),
-								  rng.uniform(0.2f, 1.f));
+							  max(rng.uniform(0.3f, 0.8f) 
+								* rng.uniform(0.3f, 0.8f), 0.2f));
 			
-			// TODO: center point of spawn, spread them
-			//float x = rng.uniform(0.f, 2.f) - 1.0f;
-			//float y = rng.uniform(0.f, 2.f) - 1.0f;
+			float x = rng.uniform(0.f, 2.f) - 1.0f;
+			float y = rng.uniform(0.f, 2.f) - 1.0f;
+			
+			float a = 0.0;
+			float b = 2.0;
+			float c = (b - a) / 2;
+			
+			solutions[i][j] = new Point2f[3];
+			solutions[i][j][0].x = x + rng.uniform(a, b) - c;
+			solutions[i][j][0].y = y + rng.uniform(a, b) - c;
+			solutions[i][j][1].x = x + rng.uniform(a, b) - c;
+			solutions[i][j][1].y = y + rng.uniform(a, b) - c;
+			solutions[i][j][2].x = x + rng.uniform(a, b) - c;
+			solutions[i][j][2].y = y + rng.uniform(a, b) - c;
 			
 			if (i < parentsAmount)
 				p_solutions[i][j] = new Point2f[3];
-			
-			solutions[i][j] = new Point2f[3];
-			solutions[i][j][0].x = rng.uniform(0.f, 2.f) - 1.0f;
-			solutions[i][j][0].y = rng.uniform(0.f, 2.f) - 1.0f;
-			solutions[i][j][1].x = rng.uniform(0.f, 2.f) - 1.0f;
-			solutions[i][j][1].y = rng.uniform(0.f, 2.f) - 1.0f;
-			solutions[i][j][2].x = rng.uniform(0.f, 2.f) - 1.0f;
-			solutions[i][j][2].y = rng.uniform(0.f, 2.f) - 1.0f;
 		}
 	}
 	

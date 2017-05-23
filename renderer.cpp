@@ -11,16 +11,16 @@
 #include <GL/glx.h>
 #include <GL/glu.h>
 
-//#define RENDER_GPU
-
 typedef GLXContext(*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
 typedef Bool(*glXMakeContextCurrentARBProc)(Display*, GLXDrawable, GLXDrawable, GLXContext);
 static glXCreateContextAttribsARBProc glXCreateContextAttribsARB = 0;
 static glXMakeContextCurrentARBProc glXMakeContextCurrentARB = 0;
 
+#define RENDER_GPU
 
-// source: https://sidvind.com/wiki/Opengl/windowless
-Renderer::Renderer(int width, int height) {	
+Renderer::Renderer(int width, int height) {
+#ifdef RENDER_GPU
+	// source: https://sidvind.com/wiki/Opengl/windowless
 	static int visual_attribs[] = {
 		None
 	};
@@ -78,22 +78,20 @@ Renderer::Renderer(int width, int height) {
 	if(!glXMakeContextCurrent(dpy, pbuf, pbuf, ctx)) {
 		// some drivers does not support context without default framebuffer
 		//  so fallback on using the default window.
-		
+
 		if(!glXMakeContextCurrent(dpy, DefaultRootWindow(dpy), DefaultRootWindow(dpy), ctx)) {
 			fprintf(stderr, "failed to make current\n");
 			exit(1);
 		}
 	}
 
-	this->width  = width;
-	this->height = height;
-	
-	prepareOpenGL();
+	prepareOpenGL(width, height);
+#endif
 }
 
 
-void Renderer::prepareOpenGL() {
-	//glEnable(GL_DEPTH_TEST); // TODO: test
+void Renderer::prepareOpenGL(int width, int height) {
+	glDisable(GL_DEPTH_TEST);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -104,9 +102,9 @@ void Renderer::prepareOpenGL() {
 	glClearColor(0, 0, 0, 0);
 
 	glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
-	
+
 	//////////
-	
+
 	/*GLuint fbo, render_buf;
 	glGenFramebuffers(1,&fbo);
 	glGenRenderbuffers(1,&render_buf);
@@ -119,13 +117,21 @@ void Renderer::prepareOpenGL() {
 
 
 void Renderer::render(Point2f** v, Scalar* c, int tris, Mat& out) {
-    	
+
 #ifdef RENDER_GPU
+	renderGPU(v, c, tris, out);
+#else
+	renderCPU(v, c, tris, out);
+#endif
+}
+
+
+void Renderer::renderGPU(Point2f** v, Scalar* c, int tris, Mat& out) {
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	// glScalef won't work - tested
 	// no need to flip matrix either
-	
+
 	glBegin(GL_TRIANGLES);
 	for(int j = 0; j < tris; j++) {
 		glColor4f(c[j][0], c[j][1], c[j][2], c[j][3]);
@@ -140,7 +146,7 @@ void Renderer::render(Point2f** v, Scalar* c, int tris, Mat& out) {
 
 	// Copy OpenGL buffer data
 	glReadPixels(0, 0, out.cols, out.rows, GL_BGR, GL_UNSIGNED_BYTE, out.data);
-	
+
 	/*GLuint pbo;
 	glGenBuffers(1,&pbo);
 	glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
@@ -151,30 +157,28 @@ void Renderer::render(Point2f** v, Scalar* c, int tris, Mat& out) {
 	//DO SOME OTHER STUFF (otherwise this is a waste of your time)
 	glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo); //Might not be necessary...
 	pixel_data = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);*/
-    
-#else
-    
-	int wh = width / 2;
-	int hh = height / 2;
-	
-	Mat empty = Mat(height, width, CV_8UC3, Scalar(0, 0, 0));
-	Mat overlay = Mat(height, width, CV_8UC3, Scalar(0, 0, 0));
-	
-	double alpha = 0.2;
-	
-    empty.copyTo(out);
-    empty.copyTo(overlay);
+}
 
-    for(int i = 0; i < tris; i++) {
-        Point p[] = {
-            Point(v[i][0].x * wh + wh, v[i][0].y * hh + hh),
-            Point(v[i][1].x * wh + wh, v[i][1].y * hh + hh),
-            Point(v[i][2].x * wh + wh, v[i][2].y * hh + hh),
-        };
-        Scalar cf = Scalar(c[i][0] * 255.0, c[i][1] * 255.0, c[i][2] * 255.0);
-        fillConvexPoly(overlay, p, 3, cf);
 
-        addWeighted(overlay, alpha, out, 1 - alpha, 0, out);
-    }
-#endif
+void Renderer::renderCPU(Point2f** v, Scalar* c, int tris, Mat& out) {
+	int wh = out.rows / 2;
+	int hh = out.cols / 2;
+
+	Mat empty = Mat(out.rows, out.cols, CV_8UC3, Scalar(0, 0, 0));
+	Mat overlay = Mat(out.rows, out.cols, CV_8UC3, Scalar(0, 0, 0));
+
+	empty.copyTo(out);
+	empty.copyTo(overlay);
+
+	for(int i = 0; i < tris; i++) {
+		Point p[] = {
+			Point(v[i][0].x * wh + wh, v[i][0].y * hh + hh),
+			Point(v[i][1].x * wh + wh, v[i][1].y * hh + hh),
+			Point(v[i][2].x * wh + wh, v[i][2].y * hh + hh),
+		};
+		Scalar cf = Scalar(c[i][0] * 255.0, c[i][1] * 255.0, c[i][2] * 255.0);
+		fillConvexPoly(overlay, p, 3, cf);
+
+		addWeighted(overlay, c[i][3], out, 1.0 - c[i][3], 0, out);
+	}
 }
