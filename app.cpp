@@ -38,12 +38,11 @@ void App::run() {
 	int i = 0;
 	for(; i < populations; ++i) {
 		high_resolution_clock::time_point t1 = high_resolution_clock::now();
-		population.selectionRoulette();
-        //population.selectionStochastic();
+		population.selection(SelectionType::Roulette);
 		high_resolution_clock::time_point t2 = high_resolution_clock::now();
-		population.crossover();
+		population.crossover(CrossoverType::Kill);
 		high_resolution_clock::time_point t3 = high_resolution_clock::now();
-		population.mutation();
+		population.mutation(MutationType::Uniform);
 		high_resolution_clock::time_point t4 = high_resolution_clock::now();
 		
 		population.createImages();

@@ -14,17 +14,30 @@
 using namespace cv;
 
 
+enum SelectionType {
+	Roulette,
+	Stochastic
+};
+
+enum CrossoverType {
+	Kill,
+	WithParents
+};
+
+enum MutationType {
+	Uniform,
+	Gauss
+};
+
 class Population {
 public:
 	Population(int population_size, int triangle_count, int cols, int rows);
 	~Population();
 	
-	void selectionStochastic();
-	void selectionRoulette();
-	void crossover();
-	void crossoverWithParents();
-	void mutation();
-	void mutationGauss();
+	void selection(SelectionType type);
+	void crossover(CrossoverType type);
+	void mutation(MutationType type);
+	
 	void fitness(Mat& target);
 	
 	void createImages();
@@ -32,25 +45,36 @@ public:
 	unsigned long long topFitness();
 	
 private:
+	void selectionStochastic();
+	void selectionRoulette();
+	
+	void crossoverKill();
+	void crossoverWithParents();
+	
+	void mutationUniform();
+	void mutationGauss();
+	
 	Point** copySolution(Point** solution);
 	
 	const double selectionRate  = 0.15;
 	const double mutationChance = 0.01;
 	const float  mutationSize   = 0.10;
 
+	int populationSize;
+	int triangleCount;
+	int cols, rows;
+	
 	Renderer* renderer;
 	
+	// GENES
 	Scalar** colors, **c_colors;
 	Point2f*** solutions, ***c_solutions;
-	// parents
-	int parentsAmount;
 	bool* selected;
 	Scalar** p_colors;
 	Point2f*** p_solutions;
 	
-	int cols, rows;
-	int populationSize;
-	int triangleCount;
+	int parentsAmount;
+	
 	unsigned long long* grades, *c_grades;
 	unsigned long long worst, best;
 	int bestIndex;

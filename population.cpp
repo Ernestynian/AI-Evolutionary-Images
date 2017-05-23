@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <cstdio>
 #include <opencv2/core.hpp>
 
 #include "population.h"
@@ -85,16 +84,22 @@ Population::Population(int populationSize, int triangleCount, int cols, int rows
 
 Population::~Population() {
 	for(int i = 0; i < populationSize; i++) {
-		for(int j = 0; j < triangleCount; j++)
+		for(int j = 0; j < triangleCount; j++) {
 			delete[] solutions[i][j];
+			delete[] c_solutions[i][j];
+		}
 
 		delete[] solutions[i];
+		delete[] c_solutions[i];
 		//delete[] colors[i];
 	}
 
 	delete[] grades;
 	delete[] solutions;
 	delete[] colors;
+	delete[] c_grades;
+	delete[] c_solutions;
+	delete[] c_colors;
 	delete[] selected;
 
 	delete[] normGrades;
@@ -173,59 +178,44 @@ unsigned long long Population::topFitness() {
 }
 
 
-void Population::selectionStochastic() {
-    // Normalize
-	double sum = 0.f;
-	for(int i = 0; i < populationSize; ++i) {
-		selected[i] = false;
-		sum += grades[i];
-	}
-
-	//assert(sum != 0);
-
-	for(int i = 0; i < populationSize; ++i)
-		normGrades[i].set((double)grades[i] / sum, i);
-
-	// Sort
-	std::sort(normGrades, normGrades + populationSize, NormalizedGrade::descending);
-
-	// Calculate accumulated
-	for(int i = 1; i < populationSize; ++i)
-		normGrades[i].accumulate(normGrades[i - 1].getAccumulated());
-    
-    ////////////////////////////////////////////////////////////////////////////
-    double interval = 1 / parentsAmount;
-    
-    double offset = rng.uniform(0.f, 1.f);
-    
-    for(int i = 0; i < parentsAmount; ++i){
-        int j = 0;
-		for(; j < populationSize; ++j) {
-			//if(selected[ normGrades[j].getID() ])
-			//	continue;
-
-			if(normGrades[j].getAccumulated() > offset)
-				break;
-		}
-        
-        //choose j
-        int ID = normGrades[j].getID();
-		selected[ID] = true;
-        
-        for(j = 0; j < triangleCount; ++j) {
-			for(int k = 0; k < 3; ++k) {
-				p_solutions[i][j][k] = solutions[ID][j][k];
-				p_colors[i][j][k] = colors[ID][j][k];
-			}
-			p_colors[i][j][3] = colors[ID][j][3];
-		}
-        //
-        
-        offset += interval;
-        if(offset > 1.f)
-            offset -= 1.f; 
-    }
+void Population::selection(SelectionType type) {
+	if (type == SelectionType::Roulette)
+		selectionRoulette();
+	else
+		selectionStochastic();
 }
+
+
+void Population::crossover(CrossoverType type) {
+	if (type == CrossoverType::Kill)
+		// Create new population from parents
+		crossoverKill();
+	else
+		crossoverWithParents();
+	
+	for(int i = 0; i < populationSize; i++) {
+		for(int j = 0; j < triangleCount; ++j) {
+			for(int k = 0; k < 3; ++k) {
+				c_solutions[i][j][k] = solutions[i][j][k];
+				c_colors[i][j][k] = colors[i][j][k];
+			}
+			c_colors[i][j][3] = colors[i][j][3];
+		}
+	}
+}
+
+
+void Population::mutation(MutationType type) {
+	if (type = MutationType::Uniform)
+		mutationUniform();
+	else
+		mutationGauss();
+}
+
+
+////////////////////////////////
+// GENETIC ALGORITHMS METHODS //
+////////////////////////////////
 
 
 // There are two 1.f because one of the grades is always 0
@@ -282,8 +272,62 @@ void Population::selectionRoulette() {
 }
 
 
-void Population::crossover() {
-	// create new population from parents
+void Population::selectionStochastic() {
+    // Normalize
+	double sum = 0.f;
+	for(int i = 0; i < populationSize; ++i) {
+		selected[i] = false;
+		sum += grades[i];
+	}
+
+	//assert(sum != 0);
+
+	for(int i = 0; i < populationSize; ++i)
+		normGrades[i].set((double)grades[i] / sum, i);
+
+	// Sort
+	std::sort(normGrades, normGrades + populationSize, NormalizedGrade::descending);
+
+	// Calculate accumulated
+	for(int i = 1; i < populationSize; ++i)
+		normGrades[i].accumulate(normGrades[i - 1].getAccumulated());
+    
+    ////////////////////////////////////////////////////////////////////////////
+    double interval = 1 / parentsAmount;
+    
+    double offset = rng.uniform(0.f, 1.f);
+    
+    for(int i = 0; i < parentsAmount; ++i){
+        int j = 0;
+		for(; j < populationSize; ++j) {
+			//if(selected[ normGrades[j].getID() ])
+			//	continue;
+
+			if(normGrades[j].getAccumulated() > offset)
+				break;
+		}
+        
+        //choose j
+        int ID = normGrades[j].getID();
+		selected[ID] = true;
+        
+        for(j = 0; j < triangleCount; ++j) {
+			for(int k = 0; k < 3; ++k) {
+				p_solutions[i][j][k] = solutions[ID][j][k];
+				p_colors[i][j][k] = colors[ID][j][k];
+			}
+			p_colors[i][j][3] = colors[ID][j][3];
+		}
+        //
+        
+        offset += interval;
+        if(offset > 1.f)
+            offset -= 1.f; 
+    }
+}
+
+
+void Population::crossoverKill() {
 	for(int i = 0; i < populationSize; i++) {
 		int a, b; // parents
 		do {
@@ -301,17 +345,7 @@ void Population::crossover() {
 			}
 			colors[i][j][3] = p_colors[src][j][3];
 		}
-	}
-	
-	for(int i = 0; i < populationSize; i++) {
-		for(int j = 0; j < triangleCount; ++j) {
-			for(int k = 0; k < 3; ++k) {
-				c_solutions[i][j][k] = solutions[i][j][k];
-				c_colors[i][j][k] = colors[i][j][k];
-			}
-			c_colors[i][j][3] = colors[i][j][3];
-		}
-	}
+	}	
 }
 
 
@@ -342,20 +376,10 @@ void Population::crossoverWithParents() {
 
 		lastNotSelected++;
 	}
-	
-	for(int i = 0; i < populationSize; i++) {
-		for(int j = 0; j < triangleCount; ++j) {
-			for(int k = 0; k < 3; ++k) {
-				c_solutions[i][j][k] = solutions[i][j][k];
-				c_colors[i][j][k] = colors[i][j][k];
-			}
-			c_colors[i][j][3] = colors[i][j][3];
-		}
-	}
 }
 
 
-void Population::mutation() {
+void Population::mutationUniform() {
 	for(int i = 0; i < populationSize; i++) {		
 		for (int j = 0; j < triangleCount; ++j) {			
 			for (int k = 0; k < 3; ++k) {
