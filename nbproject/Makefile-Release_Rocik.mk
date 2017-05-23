@@ -60,11 +60,11 @@ LDLIBSOPTIONS=`pkg-config --libs opencv`
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
-	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/projekt
+	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/ai-evolutionary-images
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/projekt: ${OBJECTFILES}
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/ai-evolutionary-images: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/projekt ${OBJECTFILES} ${LDLIBSOPTIONS} -lGLU -lGL -lX11
+	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/ai-evolutionary-images ${OBJECTFILES} ${LDLIBSOPTIONS} -lGLU -lGL -lX11
 
 ${OBJECTDIR}/app.o: app.cpp
 	${MKDIR} -p ${OBJECTDIR}

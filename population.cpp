@@ -4,8 +4,6 @@
 
 #include "population.h"
 
-#define RENDER_GPU
-
 
 Population::Population(int populationSize, int triangleCount, int cols, int rows)
 : rng(time(NULL)) {
@@ -87,37 +85,9 @@ Population::~Population() {
 }
 
 
-void Population::createImages() {	
-#ifdef RENDER_GPU
+void Population::createImages() {
 	for(int i = 0; i < populationSize; i++)
 		renderer->render(solutions[i], colors[i], triangleCount, images[i]);
-#else
-	// TODO: move to renderer
-	int wh = cols / 2;
-	int hh = rows / 2;
-	
-	Mat empty = Mat(rows, cols, CV_8UC3, Scalar(0, 0, 0));
-	Mat overlay = Mat(rows, cols, CV_8UC3, Scalar(0, 0, 0));
-	
-	double alpha = 0.2;
-	
-	for(int i = 0; i < populationSize; i++) {
-		empty.copyTo(images[i]);
-		empty.copyTo(overlay);
-		
-		for(int j = 0; j < triangleCount; j++) {
-			Point p[] = {
-				Point(solutions[i][j][0].x * wh + wh, solutions[i][j][0].y * hh + hh),
-				Point(solutions[i][j][1].x * wh + wh, solutions[i][j][1].y * hh + hh),
-				Point(solutions[i][j][2].x * wh + wh, solutions[i][j][2].y * hh + hh),
-			};
-			Scalar c = Scalar(colors[i][j][0] * 255.0, colors[i][j][1] * 255.0, colors[i][j][2] * 255.0);
-			fillConvexPoly(overlay, p, 3, c);
-			
-			addWeighted(overlay, alpha, images[i], 1 - alpha, 0, images[i]);
-		}
-	}
-#endif
 }
 
 

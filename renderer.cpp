@@ -11,6 +11,7 @@
 #include <GL/glx.h>
 #include <GL/glu.h>
 
+//#define RENDER_GPU
 
 typedef GLXContext(*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
 typedef Bool(*glXMakeContextCurrentARBProc)(Display*, GLXDrawable, GLXDrawable, GLXContext);
@@ -118,6 +119,8 @@ void Renderer::prepareOpenGL() {
 
 
 void Renderer::render(Point2f** v, Scalar* c, int tris, Mat& out) {
+    	
+#ifdef RENDER_GPU
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	// glScalef won't work - tested
@@ -148,4 +151,30 @@ void Renderer::render(Point2f** v, Scalar* c, int tris, Mat& out) {
 	//DO SOME OTHER STUFF (otherwise this is a waste of your time)
 	glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo); //Might not be necessary...
 	pixel_data = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);*/
+    
+#else
+    
+	int wh = width / 2;
+	int hh = height / 2;
+	
+	Mat empty = Mat(height, width, CV_8UC3, Scalar(0, 0, 0));
+	Mat overlay = Mat(height, width, CV_8UC3, Scalar(0, 0, 0));
+	
+	double alpha = 0.2;
+	
+    empty.copyTo(out);
+    empty.copyTo(overlay);
+
+    for(int i = 0; i < tris; i++) {
+        Point p[] = {
+            Point(v[i][0].x * wh + wh, v[i][0].y * hh + hh),
+            Point(v[i][1].x * wh + wh, v[i][1].y * hh + hh),
+            Point(v[i][2].x * wh + wh, v[i][2].y * hh + hh),
+        };
+        Scalar cf = Scalar(c[i][0] * 255.0, c[i][1] * 255.0, c[i][2] * 255.0);
+        fillConvexPoly(overlay, p, 3, cf);
+
+        addWeighted(overlay, alpha, out, 1 - alpha, 0, out);
+    }
+#endif
 }
