@@ -41,7 +41,7 @@ void App::run() {
 		high_resolution_clock::time_point t2 = high_resolution_clock::now();
 		population.crossover();
 		high_resolution_clock::time_point t3 = high_resolution_clock::now();
-		population.mutationGauss();
+		population.mutation();
 		high_resolution_clock::time_point t4 = high_resolution_clock::now();
 		
 		population.createImages();
