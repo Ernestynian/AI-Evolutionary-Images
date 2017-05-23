@@ -5,7 +5,7 @@ class NormalizedGrade {
 public:
 	void set(double grade, int id);
 
-	void addAccumulated(double acc);
+	void accumulate(double acc);
 	double getAccumulated();
 	
 	int getID();

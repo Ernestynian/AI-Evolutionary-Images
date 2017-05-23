@@ -9,7 +9,7 @@ void NormalizedGrade::set(double grade, int id) {
 }
 
 
-void NormalizedGrade::addAccumulated(double acc) {
+void NormalizedGrade::accumulate(double acc) {
 	this->accumulated += acc;
 }
 

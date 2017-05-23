@@ -38,6 +38,7 @@ void App::run() {
 	for(; i < populations; ++i) {
 		high_resolution_clock::time_point t1 = high_resolution_clock::now();
 		population.selectionRoulette();
+        //population.selectionStochastic();
 		high_resolution_clock::time_point t2 = high_resolution_clock::now();
 		population.crossover();
 		high_resolution_clock::time_point t3 = high_resolution_clock::now();

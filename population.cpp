@@ -135,7 +135,57 @@ unsigned long long Population::topFitness() {
 
 
 void Population::selectionStochastic() {
-	// TODO
+    // Normalize
+	double sum = 0.f;
+	for(int i = 0; i < populationSize; ++i) {
+		selected[i] = false;
+		sum += grades[i];
+	}
+
+	//assert(sum != 0);
+
+	for(int i = 0; i < populationSize; ++i)
+		normGrades[i].set((double)grades[i] / sum, i);
+
+	// Sort
+	std::sort(normGrades, normGrades + populationSize, NormalizedGrade::descending);
+
+	// Calculate accumulated
+	for(int i = 1; i < populationSize; ++i)
+		normGrades[i].accumulate(normGrades[i - 1].getAccumulated());
+    
+    ////////////////////////////////////////////////////////////////////////////
+    double interval = 1 / parentsAmount;
+    
+    double offset = rng.uniform(0.f, 1.f);
+    
+    for(int i = 0; i < parentsAmount; ++i){
+        int j = 0;
+		for(; j < populationSize; ++j) {
+			//if(selected[ normGrades[j].getID() ])
+			//	continue;
+
+			if(normGrades[j].getAccumulated() > offset)
+				break;
+		}
+        
+        //choose j
+        int ID = normGrades[j].getID();
+		selected[ID] = true;
+        
+        for(j = 0; j < triangleCount; ++j) {
+			for(int k = 0; k < 3; ++k) {
+				p_solutions[i][j][k] = solutions[ID][j][k];
+				p_colors[i][j][k] = colors[ID][j][k];
+			}
+			p_colors[i][j][3] = colors[ID][j][3];
+		}
+        //
+        
+        offset += interval;
+        if(offset > 1.f)
+            offset -= 1.f; 
+    }
 }
 
 
@@ -158,7 +208,7 @@ void Population::selectionRoulette() {
 
 	// Calculate accumulated
 	for(int i = 1; i < populationSize; ++i)
-		normGrades[i].addAccumulated(normGrades[i - 1].getAccumulated());
+		normGrades[i].accumulate(normGrades[i - 1].getAccumulated());
 
 	// Choose
 	//int parentsAmount = floor(populationSize * selectionRate);
