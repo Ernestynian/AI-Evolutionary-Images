@@ -18,10 +18,11 @@ App::App()
 
 
 void App::run() {
-	Mat input = imread((const char*[]){
+	Mat input = imread((const char*[]) {
 		"MonaLisa.jpg",
 		"Cat.jpg",
-	}[0]);
+		"mona.jpg"
+	}[ 0 ]);
 
 	worstFitness = input.cols * input.rows * 3 * 255;
 	

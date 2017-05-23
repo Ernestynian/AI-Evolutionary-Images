@@ -8,31 +8,38 @@
 Population::Population(int populationSize, int triangleCount, int cols, int rows)
 : rng(time(NULL)) {
 	this->populationSize = populationSize;
-	this->triangleCount = triangleCount;
+	this->triangleCount  = triangleCount;
 	this->cols = cols;
 	this->rows = rows;
 
+	renderer = new Renderer(cols, rows);
+	
 	grades = new unsigned long long[populationSize];
-	solutions = new Point2f**[populationSize];
-	colors = new Scalar*[populationSize];
+	c_grades = new unsigned long long[populationSize];
+	solutions   = new Point2f**[populationSize];
+	c_solutions = new Point2f**[populationSize];
+	colors      = new Scalar*[populationSize];
+	c_colors    = new Scalar*[populationSize];
 	
 	parentsAmount = floor(populationSize * selectionRate);
-	selected = new bool[populationSize];
-	p_solutions = new Point2f**[parentsAmount];
-	p_colors = new Scalar*[parentsAmount];
+	selected      = new bool[populationSize];
+	p_solutions   = new Point2f**[parentsAmount];
+	p_colors      = new Scalar*[parentsAmount];
 
 	normGrades = new NormalizedGrade[populationSize];
 
 	images = new Mat[populationSize];
 
 	for(int i = 0; i < populationSize; i++) {
-		solutions[i] = new Point2f*[triangleCount];
-		colors[i] = new Scalar[triangleCount];
-		images[i] = Mat(rows, cols, CV_8UC3, Scalar(0, 0, 0));
+		solutions  [i] = new Point2f*[triangleCount];
+		c_solutions[i] = new Point2f*[triangleCount];
+		colors     [i] = new Scalar[triangleCount];
+		c_colors   [i] = new Scalar[triangleCount];
+		images     [i] = Mat(rows, cols, CV_8UC3, Scalar(0, 0, 0));
 		
 		if (i < parentsAmount) {
 			p_solutions[i] = new Point2f*[triangleCount];
-			p_colors[i] = new Scalar[triangleCount];
+			p_colors   [i] = new Scalar[triangleCount];
 		}
 
 		for(int j = 0; j < triangleCount; j++) {
@@ -49,7 +56,8 @@ Population::Population(int populationSize, int triangleCount, int cols, int rows
 			float b = 2.0;
 			float c = (b - a) / 2;
 			
-			solutions[i][j] = new Point2f[3];
+			c_solutions[i][j] = new Point2f[3];
+			solutions[i][j]   = new Point2f[3];
 			solutions[i][j][0].x = x + rng.uniform(a, b) - c;
 			solutions[i][j][0].y = y + rng.uniform(a, b) - c;
 			solutions[i][j][1].x = x + rng.uniform(a, b) - c;
@@ -62,8 +70,16 @@ Population::Population(int populationSize, int triangleCount, int cols, int rows
 		}
 	}
 	
-	
-	renderer = new Renderer(cols, rows);
+	worst = 0;
+	for(int i = 0; i < populationSize; i++) {
+		for(int j = 0; j < triangleCount; ++j) {
+			for(int k = 0; k < 3; ++k) {
+				c_solutions[i][j][k] = solutions[i][j][k];
+				c_colors[i][j][k] = colors[i][j][k];
+			}
+			c_colors[i][j][3] = colors[i][j][3];
+		}
+	}
 }
 
 
@@ -96,6 +112,8 @@ void Population::createImages() {
 
 
 void Population::fitness(Mat& target) {
+	unsigned long long c_worst = worst;
+	
 	worst = 0;
 	best = LLONG_MAX;
 	bestIndex = 0;
@@ -110,6 +128,7 @@ void Population::fitness(Mat& target) {
 			}
 		}*/
 		Scalar s = sum(temp);
+		c_grades[i] = grades[i];
 		grades[i] = s[0] + s[1] + s[2];
 
 		if(grades[i] > worst)
@@ -124,6 +143,22 @@ void Population::fitness(Mat& target) {
 	for(int i = 0; i < populationSize; i++) {
 		//printf("%d: %lld\n", i, grades[i]);
 		grades[i] = worst - grades[i];
+	}
+	
+	if (c_worst > 0) {
+		for(int i = 0; i < populationSize; i++) {
+			// Is new grade better than previous, if not replace it with the old one
+			if (grades[i] + worst > c_grades[i] + c_worst) {
+				for(int j = 0; j < triangleCount; ++j) {
+					for(int k = 0; k < 3; ++k) {
+						solutions[i][j][k] = c_solutions[i][j][k];
+						colors[i][j][k] = c_colors[i][j][k];
+					}
+					colors[i][j][3] = c_colors[i][j][3];
+				}
+				grades[i] = worst - c_grades[i] + c_worst;
+			}
+		}
 	}
 }
 
@@ -215,7 +250,6 @@ void Population::selectionRoulette() {
 		normGrades[i].accumulate(normGrades[i - 1].getAccumulated());
 
 	// Choose
-	//int parentsAmount = floor(populationSize * selectionRate);
 	for(int i = 0; i < parentsAmount; i++) {
 		double R = rng.uniform(0.f, 1.f);
 
@@ -263,17 +297,25 @@ void Population::crossover() {
 
 			for(int k = 0; k < 3; ++k) {
 				solutions[i][j][k] = p_solutions[src][j][k];
-
-				colors[i][j][k] = p_colors[src][j][k];
+				colors[i][j][k]    = p_colors[src][j][k];
 			}
-			
 			colors[i][j][3] = p_colors[src][j][3];
+		}
+	}
+	
+	for(int i = 0; i < populationSize; i++) {
+		for(int j = 0; j < triangleCount; ++j) {
+			for(int k = 0; k < 3; ++k) {
+				c_solutions[i][j][k] = solutions[i][j][k];
+				c_colors[i][j][k] = colors[i][j][k];
+			}
+			c_colors[i][j][3] = colors[i][j][3];
 		}
 	}
 }
 
 
-/*void Population::crossover() {
+void Population::crossoverWithParents() {
 	int lastNotSelected = 0;
 
 	int childsAmount = ceil(populationSize * (1.f - selectionRate));
@@ -293,16 +335,24 @@ void Population::crossover() {
 
 			for(int k = 0; k < 3; ++k) {
 				solutions[lastNotSelected][j][k] = solutions[src][j][k];
-
-				colors[lastNotSelected][j][k] = colors[src][j][k];
+				colors[lastNotSelected][j][k]    = colors[src][j][k];
 			}
-			
 			colors[lastNotSelected][j][3] = colors[src][j][3];
 		}
 
 		lastNotSelected++;
 	}
-}*/
+	
+	for(int i = 0; i < populationSize; i++) {
+		for(int j = 0; j < triangleCount; ++j) {
+			for(int k = 0; k < 3; ++k) {
+				c_solutions[i][j][k] = solutions[i][j][k];
+				c_colors[i][j][k] = colors[i][j][k];
+			}
+			c_colors[i][j][3] = colors[i][j][3];
+		}
+	}
+}
 
 
 void Population::mutation() {

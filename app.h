@@ -23,7 +23,7 @@ private:
 	
 	const int populations    = 50000;
 	
-	const int triangleCount  = 20;
+	const int triangleCount  = 50;
 	const int populationSize = 50;
 	
 	const char* windowTitle = "AI Evolutionary Images";	

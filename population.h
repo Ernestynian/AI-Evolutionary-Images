@@ -22,6 +22,7 @@ public:
 	void selectionStochastic();
 	void selectionRoulette();
 	void crossover();
+	void crossoverWithParents();
 	void mutation();
 	void mutationGauss();
 	void fitness(Mat& target);
@@ -39,8 +40,8 @@ private:
 
 	Renderer* renderer;
 	
-	Scalar** colors;
-	Point2f*** solutions;
+	Scalar** colors, **c_colors;
+	Point2f*** solutions, ***c_solutions;
 	// parents
 	int parentsAmount;
 	bool* selected;
@@ -50,7 +51,7 @@ private:
 	int cols, rows;
 	int populationSize;
 	int triangleCount;
-	unsigned long long* grades;
+	unsigned long long* grades, *c_grades;
 	unsigned long long worst, best;
 	int bestIndex;
 	Mat* images;
