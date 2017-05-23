@@ -42,7 +42,7 @@ public:
 	
 	void createImages();
 	Mat topResult();
-	unsigned long long topFitness();
+	uint64 topFitness(Mat& target);
 	
 private:
 	void selectionStochastic();
@@ -75,8 +75,8 @@ private:
 	
 	int parentsAmount;
 	
-	unsigned long long* grades, *c_grades;
-	unsigned long long worst, best;
+	uint64* grades, *c_grades;
+	uint64 worst, best;
 	int bestIndex;
 	Mat* images;
 	

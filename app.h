@@ -12,7 +12,7 @@ public:
 
 	void run();
 private:
-	void drawImages(Mat image1, Mat image2, Mat image3, int pid, unsigned long long fitness);
+	void drawImages(Mat image1, Mat image2, Mat image3, int pid, uint64 fitness);
 	char buffer[128];
 
 	Scalar white;

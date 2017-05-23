@@ -25,7 +25,8 @@ void App::run() {
 	}[ 0 ]);
 
     //should be made conditional in some way
-	worstFitness = (long long)input.cols * (long long)input.rows * 3 * 255 * 255;
+	//worstFitness = (long long)input.cols * (long long)input.rows * 3 * 255 * 255;
+	worstFitness = (long long)input.cols * (long long)input.rows * 3 * 255;
 	
 	Population population(populationSize, triangleCount,
 						  input.cols, input.rows);
@@ -33,7 +34,7 @@ void App::run() {
 	population.createImages();
 	population.fitness(input);
 
-	unsigned long long bestFitness = ULONG_MAX;
+	uint64 bestFitness = ULONG_MAX;
 	Mat bestImage;
 	
 	int i = 0;
@@ -64,7 +65,7 @@ void App::run() {
 		     << std::setw(8) << durationCre
 		     << std::setw(6) << durationFit << "\n";*/
 		
-		unsigned long long currentFitness = population.topFitness();
+		uint64 currentFitness = population.topFitness(input);
 		if (currentFitness < bestFitness) {
 			bestFitness = currentFitness;
 			population.topResult().copyTo(bestImage);
@@ -82,7 +83,7 @@ void App::run() {
 }
 
 
-void App::drawImages(Mat image1, Mat image2, Mat image3, int pid, unsigned long long fitness) {
+void App::drawImages(Mat image1, Mat image2, Mat image3, int pid, uint64 fitness) {
 	Mat dst = Mat(image1.rows, image1.cols * 3, CV_8UC3, Scalar(0, 0, 0));
 
 	Mat output = dst(Rect(0, 0, image1.cols, image1.rows));

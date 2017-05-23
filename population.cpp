@@ -13,8 +13,8 @@ Population::Population(int populationSize, int triangleCount, int cols, int rows
 
 	renderer = new Renderer(cols, rows);
 	
-	grades = new unsigned long long[populationSize];
-	c_grades = new unsigned long long[populationSize];
+	grades      = new uint64[populationSize];
+	c_grades    = new uint64[populationSize];
 	solutions   = new Point2f**[populationSize];
 	c_solutions = new Point2f**[populationSize];
 	colors      = new Scalar*[populationSize];
@@ -117,7 +117,7 @@ void Population::createImages() {
 
 
 void Population::fitness(Mat& target) {
-	unsigned long long c_worst = worst;
+	uint64 c_worst = worst;
 	
 	worst = 0;
 	best = LLONG_MAX;
@@ -126,14 +126,8 @@ void Population::fitness(Mat& target) {
 	Mat temp;
 	for(int i = 0; i < populationSize; i++) {
 		absdiff(images[i], target, temp);
-		/*for(int x = 0; x < temp.rows; ++x) {
-			uchar* p = temp.ptr<uchar>(x);
-			for (int y = 0; y < temp.cols * temp.channels(); ++y) {
-				p[y] *= p[y];
-			}
-		}*/
         temp.convertTo(temp, CV_16UC3); //should be made optional in some way
-        temp = temp.mul(temp);          //
+        temp = temp.mul(temp);
 		Scalar s = sum(temp);
 		c_grades[i] = grades[i];
 		grades[i] = s[0] + s[1] + s[2];
@@ -175,8 +169,11 @@ Mat Population::topResult() {
 }
 
 
-unsigned long long Population::topFitness() {
-	return grades[bestIndex] + worst;
+uint64 Population::topFitness(Mat& target) {
+	Mat temp;
+	absdiff(images[bestIndex], target, temp);
+	Scalar s = sum(temp);
+	return s[0] + s[1] + s[2];
 }
 
 
@@ -226,13 +223,13 @@ void Population::selectionRoulette() {
 	double sum = 0.f;
 	for(int i = 0; i < populationSize; ++i) {
 		selected[i] = false;
-		sum += grades[i];
+		sum += grades[i]; // TODO: change to grades[i] * grades[i]
 	}
 
 	//assert(sum != 0);
 
 	for(int i = 0; i < populationSize; ++i)
-		normGrades[i].set((double)grades[i] / sum, i);
+		normGrades[i].set((double)(grades[i]) / sum, i);
 
 	// Sort
 	std::sort(normGrades, normGrades + populationSize, NormalizedGrade::descending);
