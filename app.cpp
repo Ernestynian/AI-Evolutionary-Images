@@ -40,7 +40,7 @@ void App::run() {
 	int i = 0;
 	for(; i < populations; ++i) {
 		high_resolution_clock::time_point t1 = high_resolution_clock::now();
-		population.selection(SelectionType::Roulette);
+		population.selection(SelectionType::BestOnes);
 		high_resolution_clock::time_point t2 = high_resolution_clock::now();
 		population.crossover(CrossoverType::Kill);
 		high_resolution_clock::time_point t3 = high_resolution_clock::now();

@@ -16,7 +16,7 @@ using namespace cv;
 
 enum SelectionType {
 	Roulette,
-	Stochastic
+	BestOnes
 };
 
 enum CrossoverType {
@@ -45,7 +45,7 @@ public:
 	uint64 topFitness(Mat& target);
 	
 private:
-	void selectionStochastic();
+	void selectionBestOnes();
 	void selectionRoulette();
 	
 	void crossoverKill();

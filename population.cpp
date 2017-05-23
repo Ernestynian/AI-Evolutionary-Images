@@ -146,7 +146,7 @@ void Population::fitness(Mat& target) {
 		grades[i] = worst - grades[i];
 	}
 	
-	if (c_worst > 0) {
+	/*if (c_worst > 0) {
 		for(int i = 0; i < populationSize; i++) {
 			// Is new grade better than previous, if not replace it with the old one
 			if (grades[i] + worst > c_grades[i] + c_worst) {
@@ -160,7 +160,7 @@ void Population::fitness(Mat& target) {
 				grades[i] = worst - c_grades[i] + c_worst;
 			}
 		}
-	}
+	}*/
 }
 
 
@@ -181,7 +181,7 @@ void Population::selection(SelectionType type) {
 	if (type == SelectionType::Roulette)
 		selectionRoulette();
 	else
-		selectionStochastic();
+		selectionBestOnes();
 }
 
 
@@ -244,11 +244,11 @@ void Population::selectionRoulette() {
 
 		int j = 0;
 		for(; j < populationSize; ++j) {
-			if(selected[ normGrades[j].getID() ])
-				continue;
-
-			if(normGrades[j].getAccumulated() > R)
+			if(!selected[ normGrades[j].getID() ])
 				break;
+
+			//if(normGrades[j].getAccumulated() > R)
+			//	break;
 		}
 
 		if(j == populationSize) {
@@ -271,58 +271,35 @@ void Population::selectionRoulette() {
 }
 
 
-void Population::selectionStochastic() {
+void Population::selectionBestOnes() {
     // Normalize
 	double sum = 0.f;
 	for(int i = 0; i < populationSize; ++i) {
 		selected[i] = false;
-		sum += grades[i];
+		sum += grades[i]; // TODO: change to grades[i] * grades[i]
 	}
 
 	//assert(sum != 0);
 
 	for(int i = 0; i < populationSize; ++i)
-		normGrades[i].set((double)grades[i] / sum, i);
+		normGrades[i].set((double)(grades[i]) / sum, i);
 
 	// Sort
 	std::sort(normGrades, normGrades + populationSize, NormalizedGrade::descending);
 
-	// Calculate accumulated
-	for(int i = 1; i < populationSize; ++i)
-		normGrades[i].accumulate(normGrades[i - 1].getAccumulated());
-    
-    ////////////////////////////////////////////////////////////////////////////
-    double interval = 1 / parentsAmount;
-    
-    double offset = rng.uniform(0.f, 1.f);
-    
-    for(int i = 0; i < parentsAmount; ++i){
-        int j = 0;
-		for(; j < populationSize; ++j) {
-			//if(selected[ normGrades[j].getID() ])
-			//	continue;
-
-			if(normGrades[j].getAccumulated() > offset)
-				break;
-		}
-        
-        //choose j
-        int ID = normGrades[j].getID();
+	// Choose
+	for(int i = 0; i < parentsAmount; i++) {		
+		int ID = normGrades[i].getID();
 		selected[ID] = true;
-        
-        for(j = 0; j < triangleCount; ++j) {
+		
+		for(int j = 0; j < triangleCount; ++j) {
 			for(int k = 0; k < 3; ++k) {
 				p_solutions[i][j][k] = solutions[ID][j][k];
 				p_colors[i][j][k] = colors[ID][j][k];
 			}
 			p_colors[i][j][3] = colors[ID][j][3];
 		}
-        //
-        
-        offset += interval;
-        if(offset > 1.f)
-            offset -= 1.f; 
-    }
+	}
 }
 
 
