@@ -31,7 +31,7 @@ enum MutationType {
 
 class Population {
 public:
-	Population(Mat& target, int population_size, int triangle_count);
+	Population(Mat& target);
 	~Population();
 	
 	void selection(SelectionType type);
@@ -40,7 +40,6 @@ public:
 	
 	void fitness();
 	
-	void createImages();
 	Mat topResult();
 	uint64 topFitness();
 	
@@ -61,8 +60,8 @@ private:
 	const double mutationChance = 0.01;
 	const float  mutationSize   = 0.10;
 
-	int populationSize;
-	int triangleCount;
+	const int triangleCount     = 150;
+	const int populationSize    = 50;
 	int cols, rows;
 	
 	Renderer* renderer;

@@ -10,15 +10,21 @@ using namespace cv;
 
 class Renderer {
 public:
-	Renderer(int width, int height);
-	void prepareOpenGL(Mat& original);
+	Renderer(Mat& original, int width, int height, bool isHardwareAccelerated = true);
+	~Renderer();
+	
 	
 	void render(Point2f** v, Scalar* c, int tris, uint64* grades);
-	void renderGPU(Point2f** v, Scalar* c, int tris, Mat& out);
+	void renderImage(Point2f** v, Scalar* c, int tris, Mat& out);
 	
 private:
-	int width, height;
+	Mat* original;
+	bool isHardwareAccelerated;
 	
+	int width, height;
+	float* columnAvgs;
+	
+	void prepareOpenGL();
 	void createShaders();
 	uint fragShader0, fragShader1, fragShader2;
 	uint p0, p1, p2;
@@ -27,8 +33,11 @@ private:
 	void printShaderInfoLog(const char* title, uint obj);
 	void printProgramInfoLog(const char* title, uint obj);
 	
-	void renderGPUx(Point2f** v, Scalar* c, int tris, uint64* grades);
-	void renderCPU(Point2f** v, Scalar* c, int tris, Mat& out);
+	void renderImageGPU(Point2f** v, Scalar* c, int tris, Mat& out);
+	void renderImageCPU(Point2f** v, Scalar* c, int tris, Mat& out);
+	
+	uint64 renderGPU(Point2f** v, Scalar* c, int tris);
+	uint64 renderCPU(Point2f** v, Scalar* c, int tris);
 	
 	uint originalTexture;
 	uint renderedTexture;

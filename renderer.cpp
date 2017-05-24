@@ -21,80 +21,88 @@ typedef Bool(*glXMakeContextCurrentARBProc)(Display*, GLXDrawable, GLXDrawable, 
 static glXCreateContextAttribsARBProc glXCreateContextAttribsARB = 0;
 static glXMakeContextCurrentARBProc glXMakeContextCurrentARB = 0;
 
-#define RENDER_GPU
 
-Renderer::Renderer(int width, int height):
+
+Renderer::Renderer(Mat& original, int width, int height, bool isHardwareAccelerated):
 	width(width), height(height) {
-#ifdef RENDER_GPU
-	// source: https://sidvind.com/wiki/Opengl/windowless
-	static int visual_attribs[] = {
-		None
-	};
-	int context_attribs[] = {
-		GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
-		GLX_CONTEXT_MINOR_VERSION_ARB, 0,
-		None
-	};
+	this->original = &original;
+	
+	this->isHardwareAccelerated = isHardwareAccelerated;
+	if (isHardwareAccelerated) {
+		// source: https://sidvind.com/wiki/Opengl/windowless
+		static int visual_attribs[] = {
+			None
+		};
+		int context_attribs[] = {
+			GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+			GLX_CONTEXT_MINOR_VERSION_ARB, 0,
+			None
+		};
 
-	Display* dpy = XOpenDisplay(0);
-	int fbcount = 0;
-	GLXFBConfig* fbc = NULL;
-	GLXContext ctx;
-	GLXPbuffer pbuf;
+		Display* dpy = XOpenDisplay(0);
+		int fbcount = 0;
+		GLXFBConfig* fbc = NULL;
+		GLXContext ctx;
+		GLXPbuffer pbuf;
 
-	if(!(dpy = XOpenDisplay(0))) {
-		fprintf(stderr, "Failed to open display\n");
-		exit(1);
-	}
-
-	// get framebuffer configs, any is usable (might want to add proper attribs)
-	if(!(fbc = glXChooseFBConfig(dpy, DefaultScreen(dpy), visual_attribs, &fbcount))) {
-		fprintf(stderr, "Failed to get FBConfig\n");
-		exit(1);
-	}
-
-	// get the required extensions
-	glXCreateContextAttribsARB = (glXCreateContextAttribsARBProc)glXGetProcAddressARB((const GLubyte *)"glXCreateContextAttribsARB");
-	glXMakeContextCurrentARB = (glXMakeContextCurrentARBProc)glXGetProcAddressARB((const GLubyte *)"glXMakeContextCurrent");
-	if(!(glXCreateContextAttribsARB && glXMakeContextCurrentARB)) {
-		fprintf(stderr, "missing support for GLX_ARB_create_context\n");
-		XFree(fbc);
-		exit(1);
-	}
-
-	// create a context using glXCreateContextAttribsARB
-	if(!(ctx = glXCreateContextAttribsARB(dpy, fbc[0], 0, True, context_attribs))) {
-		fprintf(stderr, "Failed to create opengl context\n");
-		XFree(fbc);
-		exit(1);
-	}
-
-	// create temporary pbuffer
-	int pbuffer_attribs[] = {
-		GLX_PBUFFER_WIDTH, width,
-		GLX_PBUFFER_HEIGHT, height,
-		None
-	};
-	pbuf = glXCreatePbuffer(dpy, fbc[0], pbuffer_attribs);
-
-	XFree(fbc);
-	XSync(dpy, False);
-
-	// try to make it the current context 
-	if(!glXMakeContextCurrent(dpy, pbuf, pbuf, ctx)) {
-		// some drivers does not support context without default framebuffer
-		//  so fallback on using the default window.
-
-		if(!glXMakeContextCurrent(dpy, DefaultRootWindow(dpy), DefaultRootWindow(dpy), ctx)) {
-			fprintf(stderr, "failed to make current\n");
+		if(!(dpy = XOpenDisplay(0))) {
+			fprintf(stderr, "Failed to open display\n");
 			exit(1);
 		}
+
+		// get framebuffer configs, any is usable (might want to add proper attribs)
+		if(!(fbc = glXChooseFBConfig(dpy, DefaultScreen(dpy), visual_attribs, &fbcount))) {
+			fprintf(stderr, "Failed to get FBConfig\n");
+			exit(1);
+		}
+
+		// get the required extensions
+		glXCreateContextAttribsARB = (glXCreateContextAttribsARBProc)glXGetProcAddressARB((const GLubyte *)"glXCreateContextAttribsARB");
+		glXMakeContextCurrentARB = (glXMakeContextCurrentARBProc)glXGetProcAddressARB((const GLubyte *)"glXMakeContextCurrent");
+		if(!(glXCreateContextAttribsARB && glXMakeContextCurrentARB)) {
+			fprintf(stderr, "missing support for GLX_ARB_create_context\n");
+			XFree(fbc);
+			exit(1);
+		}
+
+		// create a context using glXCreateContextAttribsARB
+		if(!(ctx = glXCreateContextAttribsARB(dpy, fbc[0], 0, True, context_attribs))) {
+			fprintf(stderr, "Failed to create opengl context\n");
+			XFree(fbc);
+			exit(1);
+		}
+
+		// create temporary pbuffer
+		int pbuffer_attribs[] = {
+			GLX_PBUFFER_WIDTH, width,
+			GLX_PBUFFER_HEIGHT, height,
+			None
+		};
+		pbuf = glXCreatePbuffer(dpy, fbc[0], pbuffer_attribs);
+
+		XFree(fbc);
+		XSync(dpy, False);
+
+		// try to make it the current context 
+		if(!glXMakeContextCurrent(dpy, pbuf, pbuf, ctx)) {
+			// some drivers does not support context without default framebuffer
+			//  so fallback on using the default window.
+
+			if(!glXMakeContextCurrent(dpy, DefaultRootWindow(dpy), DefaultRootWindow(dpy), ctx)) {
+				fprintf(stderr, "failed to make current\n");
+				exit(1);
+			}
+		}
+
+		columnAvgs = new float[width];
+		
+		prepareOpenGL();
+		createShaders();
 	}
-#endif
 }
 
 
-void Renderer::prepareOpenGL(Mat& original) {
+void Renderer::prepareOpenGL() {
 	glewInit();
 	
 	glDisable(GL_DEPTH_TEST);
@@ -104,10 +112,10 @@ void Renderer::prepareOpenGL(Mat& original) {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthMask(false);
 
-	glPixelStorei(GL_PACK_ALIGNMENT, (original.step & 3) ? 1 : 4);
-	glPixelStorei(GL_PACK_ROW_LENGTH, original.step / original.elemSize());
+	glPixelStorei(GL_PACK_ALIGNMENT, (original->step & 3) ? 1 : 4);
+	glPixelStorei(GL_PACK_ROW_LENGTH, original->step / original->elemSize());
 	
-	glViewport(0, 0, original.cols, original.rows);
+	glViewport(0, 0, width, height);
 	
 	glClearColor(0, 0, 0, 0);
 
@@ -116,11 +124,11 @@ void Renderer::prepareOpenGL(Mat& original) {
 	/////////////////////////
 	
 	Mat temp;
-	cv::flip(original, temp, 0);
+	cv::flip(*original, temp, 0);
 	glGenTextures(1, &originalTexture);
 	glBindTexture(GL_TEXTURE_2D, originalTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, original.cols, original.rows,
-				0, GL_BGR, GL_UNSIGNED_BYTE, original.ptr());
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height,
+				0, GL_BGR, GL_UNSIGNED_BYTE, original->ptr());
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	
@@ -135,7 +143,7 @@ void Renderer::prepareOpenGL(Mat& original) {
 
 	glBindTexture(GL_TEXTURE_2D, renderedTexture);
 	
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, original.cols, original.rows, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -158,7 +166,7 @@ void Renderer::prepareOpenGL(Mat& original) {
 
 	glBindTexture(GL_TEXTURE_2D, diffTexture);
 	
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, original.cols, original.rows, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -168,9 +176,11 @@ void Renderer::prepareOpenGL(Mat& original) {
 	glDrawBuffers(1, DrawBuffers);
 	
 	assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
-	
-	createShaders();
-	
+}
+
+
+Renderer::~Renderer() {
+	delete[] columnAvgs;
 }
 
 
@@ -216,17 +226,23 @@ void Renderer::createShaders() {
 
 
 
-void Renderer::render(Point2f** v, Scalar* c, int tris, uint64* grades) {
-
-#ifdef RENDER_GPU
-	renderGPUx(v, c, tris, grades);
-#else
-	renderCPU(v, c, tris, out);
-#endif
+void Renderer::render(Point2f** v, Scalar* c, int tris, uint64* grade) {
+	if (isHardwareAccelerated)
+		*grade = renderGPU(v, c, tris);
+	else
+		*grade = renderCPU(v, c, tris);
 }
 
 
-void Renderer::renderGPUx(Point2f** v, Scalar* c, int tris, uint64* grade) {
+void Renderer::renderImage(Point2f** v, Scalar* c, int tris, Mat& out) {
+	if (isHardwareAccelerated)
+		renderImageGPU(v, c, tris, out);
+	else
+		renderImageCPU(v, c, tris, out);
+}
+
+
+uint64 Renderer::renderGPU(Point2f** v, Scalar* c, int tris) {
 	// glScalef won't work - tested
 	// no need to flip matrix either
 
@@ -251,8 +267,6 @@ void Renderer::renderGPUx(Point2f** v, Scalar* c, int tris, uint64* grade) {
 	}
 	glEnd();
 	
-	//glReadPixels(0, 0, out.cols, out.rows, GL_BGR, GL_UNSIGNED_BYTE, out.data);
-	
 	///////// SECOND PASS /////////
 	//glOrtho(0, out.cols, 0, out.rows, 0, 1);
 	
@@ -276,14 +290,7 @@ void Renderer::renderGPUx(Point2f** v, Scalar* c, int tris, uint64* grade) {
 		glTexCoord2i(0, 1); glVertex2f(-1.0,  1.0);
 		glTexCoord2i(1, 1); glVertex2f( 1.0,  1.0);
 		glTexCoord2i(1, 0); glVertex2f( 1.0, -1.0);
-
-		/*glTexCoord2i(0, 0); glVertex2f(0, 0);
-		glTexCoord2i(0, 1); glVertex2f(0, out.rows);
-		glTexCoord2i(1, 1); glVertex2f(out.cols, out.rows);
-		glTexCoord2i(1, 0); glVertex2f(out.cols, 0);*/
 	glEnd();
-	
-	//glReadPixels(0, 0, out.cols, out.rows, GL_BGR, GL_UNSIGNED_BYTE, out.data);
 	
 	///////// THIRD PASS /////////
 	glMatrixMode(GL_PROJECTION);
@@ -305,28 +312,22 @@ void Renderer::renderGPUx(Point2f** v, Scalar* c, int tris, uint64* grade) {
 
 	glBegin(GL_QUADS);
 		glTexCoord2i(0, 0); glVertex2f(0, 0);
-		glTexCoord2i(0, 1); glVertex2f(0, 10);
-		glTexCoord2i(1, 1); glVertex2f(width, 10);
+		glTexCoord2i(0, 1); glVertex2f(0, 1);
+		glTexCoord2i(1, 1); glVertex2f(width, 1);
 		glTexCoord2i(1, 0); glVertex2f(width, 0);
 	glEnd();
 	
-	//glReadPixels(0, 0, out.cols, 10, GL_BGR, GL_UNSIGNED_BYTE, out.data);
 	// Copy OpenGL buffer data
-	float* arr = new float[width];
-	glReadPixels(0, 0, width, 1, GL_RED, GL_FLOAT, arr);
 	float sum = 0.0;
+	glReadPixels(0, 0, width, 1, GL_RED, GL_FLOAT, columnAvgs);
 	for (int i = 0; i < width; ++i)
-		sum += arr[i];
+		sum += columnAvgs[i];
 	
-	//printf("test: %f %f %f\n", arr[0], arr[1], arr[2]);
-	delete[] arr;
-	
-	*grade = uint64(sum * 10000000);
-	//printf("grade: %d\n", *grade);
+	return uint64(sum * width * height * 255);
 }
 
 
-void Renderer::renderGPU(Point2f** v, Scalar* c, int tris, Mat& out) {
+void Renderer::renderImageGPU(Point2f** v, Scalar* c, int tris, Mat& out) {
 	// glScalef won't work - tested
 	// no need to flip matrix either
 
@@ -354,15 +355,39 @@ void Renderer::renderGPU(Point2f** v, Scalar* c, int tris, Mat& out) {
 }
 
 
-void Renderer::renderCPU(Point2f** v, Scalar* c, int tris, Mat& out) {
-	int wh = out.rows / 2;
-	int hh = out.cols / 2;
+uint64 Renderer::renderCPU(Point2f** v, Scalar* c, int tris) {
+	int wh = width / 2;
+	int hh = height / 2;
 
-	Mat empty = Mat(out.rows, out.cols, CV_8UC3, Scalar(0, 0, 0));
-	Mat overlay = Mat(out.rows, out.cols, CV_8UC3, Scalar(0, 0, 0));
+	Mat out = Mat(height, width, CV_8UC3, Scalar(0, 0, 0));
+	Mat overlay = Mat(height, width, CV_8UC3, Scalar(0, 0, 0));
 
-	empty.copyTo(out);
-	empty.copyTo(overlay);
+	for(int i = 0; i < tris; i++) {
+		Point p[] = {
+			Point(v[i][0].x * wh + wh, v[i][0].y * hh + hh),
+			Point(v[i][1].x * wh + wh, v[i][1].y * hh + hh),
+			Point(v[i][2].x * wh + wh, v[i][2].y * hh + hh),
+		};
+		Scalar cf = Scalar(c[i][0] * 255.0, c[i][1] * 255.0, c[i][2] * 255.0);
+		fillConvexPoly(overlay, p, 3, cf);
+
+		addWeighted(overlay, c[i][3], out, 1.0 - c[i][3], 0, out);
+	}
+	
+	absdiff(out, *original, overlay);
+	overlay.convertTo(overlay, CV_16UC3); //should be made optional in some way
+	overlay = overlay.mul(overlay);
+	Scalar s = sum(overlay);
+	
+	return s[0] + s[1] + s[2];
+}
+
+
+void Renderer::renderImageCPU(Point2f** v, Scalar* c, int tris, Mat& out) {
+	int wh = width / 2;
+	int hh = height / 2;
+
+	Mat overlay = Mat(height, width, CV_8UC3, Scalar(0, 0, 0));
 
 	for(int i = 0; i < tris; i++) {
 		Point p[] = {

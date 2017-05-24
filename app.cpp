@@ -27,9 +27,8 @@ void App::run() {
 	
 	worstFitness = (long long)input.cols * (long long)input.rows * 3 * 255;
 	
-	Population population(input, populationSize, triangleCount);
+	Population population(input);
 
-	population.createImages();
 	population.fitness();
 
 	uint64 bestFitness = ULONG_MAX;
@@ -45,23 +44,19 @@ void App::run() {
 		population.mutation(MutationType::Gauss);
 		high_resolution_clock::time_point t4 = high_resolution_clock::now();
 		
-		population.createImages();
-		high_resolution_clock::time_point t5 = high_resolution_clock::now();
 		population.fitness();
-		high_resolution_clock::time_point t6 = high_resolution_clock::now();
+		high_resolution_clock::time_point t5 = high_resolution_clock::now();
 
 		auto durationSel = duration_cast<microseconds>( t2 - t1 ).count();
 		auto durationCro = duration_cast<microseconds>( t3 - t2 ).count();
 		auto durationMut = duration_cast<microseconds>( t4 - t3 ).count();
 		auto durationCre = duration_cast<microseconds>( t5 - t4 ).count();
-		auto durationFit = duration_cast<microseconds>( t6 - t5 ).count();
 		
-		/*cout << "SCM: "
+		cout << "SCM: "
 			 << std::setw(3) << durationSel
 			 << std::setw(5) << durationCro 
 		     << std::setw(4) << durationMut
-		     << std::setw(8) << durationCre
-		     << std::setw(6) << durationFit << "\n";*/
+		     << std::setw(8) << durationCre << "\n";
 		
 		uint64 currentFitness = population.topFitness();
 		if (currentFitness < bestFitness) {

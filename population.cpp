@@ -4,16 +4,13 @@
 #include "population.h"
 
 
-Population::Population(Mat& target, int populationSize, int triangleCount)
+Population::Population(Mat& target)
 : rng(time(NULL)) {
-	this->populationSize = populationSize;
-	this->triangleCount  = triangleCount;
 	this->target = &target;
 	this->cols = target.cols;
 	this->rows = target.rows;
 
-	renderer = new Renderer(cols, rows);
-	renderer->prepareOpenGL(target);
+	renderer = new Renderer(target, cols, rows);
 	
 	grades      = new uint64[populationSize];
 	solutions   = new Point2f**[populationSize];
@@ -92,14 +89,11 @@ Population::~Population() {
 }
 
 
-void Population::createImages() {
+void Population::fitness() {
 	//for(int i = 0; i < populationSize; i++)
 		//renderer->render(solutions[i], colors[i], triangleCount, images[i
 		//renderer->render(solutions[i], colors[i], triangleCount, grades + i);
-}
-
-
-void Population::fitness() {
+	
 	worst = 0;
 	best = LLONG_MAX;
 	bestIndex = 0;
@@ -130,7 +124,7 @@ void Population::fitness() {
 
 
 Mat Population::topResult() {
-	renderer->renderGPU(solutions[bestIndex], colors[bestIndex], triangleCount, bestImage);
+	renderer->renderImage(solutions[bestIndex], colors[bestIndex], triangleCount, bestImage);
 	return bestImage;
 	//return images[bestIndex];
 }
