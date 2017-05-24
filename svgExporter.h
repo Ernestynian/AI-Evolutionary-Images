@@ -4,11 +4,10 @@
 #include <opencv2/core/types.hpp>
 #include <iostream>
 
-void saveTrianglesToSvg(char* name, Point2f** points, Scalar* colors, int triangleCount, int cols, int rows) {
+void saveTrianglesToSvg(const char* name, Point2f** points, Scalar* colors, int triangleCount, int cols, int rows) {
     //open file
     std::ofstream outputFile;
     
-    std::cout <<"test\n";
     outputFile.open(name);
     //write beginning
     outputFile << "<svg viewBox=\"0 0 " 

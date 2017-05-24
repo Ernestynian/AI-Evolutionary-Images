@@ -375,7 +375,7 @@ uint64 Renderer::renderCPU(Point2f** v, Scalar* c, int tris) {
 	}
 	
 	absdiff(out, *original, overlay);
-	overlay.convertTo(overlay, CV_16UC3); //should be made optional in some way
+	overlay.convertTo(overlay, CV_16UC3); // should be made optional in some way
 	overlay = overlay.mul(overlay);
 	Scalar s = sum(overlay);
 	

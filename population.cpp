@@ -409,6 +409,7 @@ void Population::mutationGauss() {
 	}
 }
 
-void Population::saveBestAs(char* name) {
+
+void Population::saveBestAs(const char* name) {
     saveTrianglesToSvg(name, solutions[bestIndex], colors[bestIndex], triangleCount, cols, rows);
 }

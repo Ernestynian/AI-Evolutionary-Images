@@ -43,7 +43,7 @@ public:
 	Mat topResult();
 	uint64 topFitness();
     
-    void saveBestAs(char* name);
+    void saveBestAs(const char* name);
 	
 private:
 	void selectionBestOnes();

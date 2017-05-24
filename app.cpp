@@ -41,7 +41,7 @@ void App::run() {
 		high_resolution_clock::time_point t2 = high_resolution_clock::now();
 		population.crossover(CrossoverType::WithParents);
 		high_resolution_clock::time_point t3 = high_resolution_clock::now();
-		population.mutation(MutationType::Gauss);
+		population.mutation(MutationType::Uniform);
 		high_resolution_clock::time_point t4 = high_resolution_clock::now();
 		
 		population.fitness();
@@ -52,11 +52,11 @@ void App::run() {
 		auto durationMut = duration_cast<microseconds>( t4 - t3 ).count();
 		auto durationCre = duration_cast<microseconds>( t5 - t4 ).count();
 		
-		cout << "SCM: "
+		/*cout << "SCM: "
 			 << std::setw(3) << durationSel
 			 << std::setw(5) << durationCro 
 		     << std::setw(4) << durationMut
-		     << std::setw(8) << durationCre << "\n";
+		     << std::setw(8) << durationCre << "\n";*/
 		
 		uint64 currentFitness = population.topFitness();
 		if (currentFitness < bestFitness) {
