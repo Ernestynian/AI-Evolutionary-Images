@@ -18,21 +18,19 @@ App::App()
 
 
 void App::run() {
-	Mat input = imread((const char*[]) {
-		"MonaLisa.jpg",
-		"Cat.jpg",
-		"mona.jpg"
-	}[ 0 ]);
-
-    //should be made conditional in some way
-	//worstFitness = (long long)input.cols * (long long)input.rows * 3 * 255 * 255;
+	Mat input = imread((const char*[]) { "",
+		"MonaLisa.jpg", // 1
+		"Cat.jpg",		// 2
+		"mona.jpg",		// 3
+		"spongebob.jpg" // 4
+	}[ 1 ]);
+	
 	worstFitness = (long long)input.cols * (long long)input.rows * 3 * 255;
 	
-	Population population(populationSize, triangleCount,
-						  input.cols, input.rows);
+	Population population(input, populationSize, triangleCount);
 
 	population.createImages();
-	population.fitness(input);
+	population.fitness();
 
 	uint64 bestFitness = ULONG_MAX;
 	Mat bestImage;
@@ -42,14 +40,14 @@ void App::run() {
 		high_resolution_clock::time_point t1 = high_resolution_clock::now();
 		population.selection(SelectionType::BestOnes);
 		high_resolution_clock::time_point t2 = high_resolution_clock::now();
-		population.crossover(CrossoverType::Kill);
+		population.crossover(CrossoverType::WithParents);
 		high_resolution_clock::time_point t3 = high_resolution_clock::now();
-		population.mutation(MutationType::Uniform);
+		population.mutation(MutationType::Gauss);
 		high_resolution_clock::time_point t4 = high_resolution_clock::now();
 		
 		population.createImages();
 		high_resolution_clock::time_point t5 = high_resolution_clock::now();
-		population.fitness(input);
+		population.fitness();
 		high_resolution_clock::time_point t6 = high_resolution_clock::now();
 
 		auto durationSel = duration_cast<microseconds>( t2 - t1 ).count();
@@ -65,20 +63,20 @@ void App::run() {
 		     << std::setw(8) << durationCre
 		     << std::setw(6) << durationFit << "\n";*/
 		
-		uint64 currentFitness = population.topFitness(input);
+		uint64 currentFitness = population.topFitness();
 		if (currentFitness < bestFitness) {
 			bestFitness = currentFitness;
 			population.topResult().copyTo(bestImage);
 		}
 		
-		drawImages(input, bestImage, population.topResult(), i, bestFitness);
+		drawImages(population.topResult(), input, bestImage, i, bestFitness);
 		
 		// Stop when key is pressed
 		if (waitKey(1) == 'q')
 			break;
 	}
 	
-	drawImages(input, bestImage, population.topResult(), i, bestFitness);
+	drawImages(population.topResult(), input, bestImage, i, bestFitness);
 	waitKey(0);
 }
 
@@ -93,10 +91,10 @@ void App::drawImages(Mat image1, Mat image2, Mat image3, int pid, uint64 fitness
 	output = dst(Rect(image1.cols * 2, 0, image1.cols, image1.rows));
 	image3.copyTo(output);
 
-	sprintf(buffer, "P: %d", pid + 1);
+	sprintf(buffer, "Gen: %d", pid + 1);
 	putText(dst, buffer, pPos, FONT_HERSHEY_PLAIN, 1.0, white, 1, CV_AA);
 	
-	sprintf(buffer, "F: %.2f%%", 100.0 * (1.0 - (double)fitness / worstFitness) );
+	sprintf(buffer, "Fit: %.2f%%", 100.0 * (1.0 - (double)fitness / worstFitness) );
 	putText(dst, buffer, fPos, FONT_HERSHEY_PLAIN, 1.0, white, 1, CV_AA);
 	
 	imshow(windowTitle, dst);

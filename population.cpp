@@ -4,23 +4,23 @@
 #include "population.h"
 
 
-Population::Population(int populationSize, int triangleCount, int cols, int rows)
+Population::Population(Mat& target, int populationSize, int triangleCount)
 : rng(time(NULL)) {
 	this->populationSize = populationSize;
 	this->triangleCount  = triangleCount;
-	this->cols = cols;
-	this->rows = rows;
+	this->target = &target;
+	this->cols = target.cols;
+	this->rows = target.rows;
 
 	renderer = new Renderer(cols, rows);
+	renderer->prepareOpenGL(target);
 	
 	grades      = new uint64[populationSize];
-	c_grades    = new uint64[populationSize];
 	solutions   = new Point2f**[populationSize];
-	c_solutions = new Point2f**[populationSize];
 	colors      = new Scalar*[populationSize];
-	c_colors    = new Scalar*[populationSize];
 	
 	parentsAmount = floor(populationSize * selectionRate);
+	childsAmount  = ceil(populationSize * (1.f - selectionRate));
 	selected      = new bool[populationSize];
 	p_solutions   = new Point2f**[parentsAmount];
 	p_colors      = new Scalar*[parentsAmount];
@@ -31,9 +31,7 @@ Population::Population(int populationSize, int triangleCount, int cols, int rows
 
 	for(int i = 0; i < populationSize; i++) {
 		solutions  [i] = new Point2f*[triangleCount];
-		c_solutions[i] = new Point2f*[triangleCount];
 		colors     [i] = new Scalar[triangleCount];
-		c_colors   [i] = new Scalar[triangleCount];
 		images     [i] = Mat(rows, cols, CV_8UC3, Scalar(0, 0, 0));
 		
 		if (i < parentsAmount) {
@@ -55,7 +53,6 @@ Population::Population(int populationSize, int triangleCount, int cols, int rows
 			float b = 2.0;
 			float c = (b - a) / 2;
 			
-			c_solutions[i][j] = new Point2f[3];
 			solutions[i][j]   = new Point2f[3];
 			solutions[i][j][0].x = x + rng.uniform(a, b) - c;
 			solutions[i][j][0].y = y + rng.uniform(a, b) - c;
@@ -68,17 +65,6 @@ Population::Population(int populationSize, int triangleCount, int cols, int rows
 				p_solutions[i][j] = new Point2f[3];
 		}
 	}
-	
-	worst = 0;
-	for(int i = 0; i < populationSize; i++) {
-		for(int j = 0; j < triangleCount; ++j) {
-			for(int k = 0; k < 3; ++k) {
-				c_solutions[i][j][k] = solutions[i][j][k];
-				c_colors[i][j][k] = colors[i][j][k];
-			}
-			c_colors[i][j][3] = colors[i][j][3];
-		}
-	}
 }
 
 
@@ -86,20 +72,15 @@ Population::~Population() {
 	for(int i = 0; i < populationSize; i++) {
 		for(int j = 0; j < triangleCount; j++) {
 			delete[] solutions[i][j];
-			delete[] c_solutions[i][j];
 		}
 
 		delete[] solutions[i];
-		delete[] c_solutions[i];
 		//delete[] colors[i];
 	}
 
 	delete[] grades;
 	delete[] solutions;
 	delete[] colors;
-	delete[] c_grades;
-	delete[] c_solutions;
-	delete[] c_colors;
 	delete[] selected;
 
 	delete[] normGrades;
@@ -116,20 +97,17 @@ void Population::createImages() {
 }
 
 
-void Population::fitness(Mat& target) {
-	uint64 c_worst = worst;
-	
+void Population::fitness() {
 	worst = 0;
 	best = LLONG_MAX;
 	bestIndex = 0;
 	
 	Mat temp;
 	for(int i = 0; i < populationSize; i++) {
-		absdiff(images[i], target, temp);
+		absdiff(images[i], *target, temp);
         temp.convertTo(temp, CV_16UC3); //should be made optional in some way
         temp = temp.mul(temp);
 		Scalar s = sum(temp);
-		c_grades[i] = grades[i];
 		grades[i] = s[0] + s[1] + s[2];
 
 		if(grades[i] > worst)
@@ -145,22 +123,6 @@ void Population::fitness(Mat& target) {
 		//printf("%d: %lld\n", i, grades[i]);
 		grades[i] = worst - grades[i];
 	}
-	
-	/*if (c_worst > 0) {
-		for(int i = 0; i < populationSize; i++) {
-			// Is new grade better than previous, if not replace it with the old one
-			if (grades[i] + worst > c_grades[i] + c_worst) {
-				for(int j = 0; j < triangleCount; ++j) {
-					for(int k = 0; k < 3; ++k) {
-						solutions[i][j][k] = c_solutions[i][j][k];
-						colors[i][j][k] = c_colors[i][j][k];
-					}
-					colors[i][j][3] = c_colors[i][j][3];
-				}
-				grades[i] = worst - c_grades[i] + c_worst;
-			}
-		}
-	}*/
 }
 
 
@@ -169,9 +131,9 @@ Mat Population::topResult() {
 }
 
 
-uint64 Population::topFitness(Mat& target) {
+uint64 Population::topFitness() {
 	Mat temp;
-	absdiff(images[bestIndex], target, temp);
+	absdiff(images[bestIndex], *target, temp);
 	Scalar s = sum(temp);
 	return s[0] + s[1] + s[2];
 }
@@ -191,16 +153,6 @@ void Population::crossover(CrossoverType type) {
 		crossoverKill();
 	else
 		crossoverWithParents();
-	
-	for(int i = 0; i < populationSize; i++) {
-		for(int j = 0; j < triangleCount; ++j) {
-			for(int k = 0; k < 3; ++k) {
-				c_solutions[i][j][k] = solutions[i][j][k];
-				c_colors[i][j][k] = colors[i][j][k];
-			}
-			c_colors[i][j][3] = colors[i][j][3];
-		}
-	}
 }
 
 
@@ -218,15 +170,15 @@ void Population::mutation(MutationType type) {
 
 
 // There are two 1.f because one of the grades is always 0
-void Population::selectionRoulette() {
+void Population::selectionRoulette() {	
 	// Normalize
 	double sum = 0.f;
 	for(int i = 0; i < populationSize; ++i) {
 		selected[i] = false;
-		sum += grades[i]; // TODO: change to grades[i] * grades[i]
+		sum += grades[i] ; // TODO: change to grades[i] * grades[i]
 	}
 
-	//assert(sum != 0);
+	assert(sum != 0);
 
 	for(int i = 0; i < populationSize; ++i)
 		normGrades[i].set((double)(grades[i]) / sum, i);
@@ -245,10 +197,10 @@ void Population::selectionRoulette() {
 		int j = 0;
 		for(; j < populationSize; ++j) {
 			if(!selected[ normGrades[j].getID() ])
-				break;
+				continue;
 
-			//if(normGrades[j].getAccumulated() > R)
-			//	break;
+			if(normGrades[j].getAccumulated() > R)
+				break;
 		}
 
 		if(j == populationSize) {
@@ -326,9 +278,9 @@ void Population::crossoverKill() {
 
 
 void Population::crossoverWithParents() {
+	// Better than Kill
 	int lastNotSelected = 0;
 
-	int childsAmount = ceil(populationSize * (1.f - selectionRate));
 	for(int i = 0; i < childsAmount; i++) {
 		int a, b; // parents
 		do {
@@ -408,6 +360,7 @@ void Population::mutationUniform() {
 
 
 void Population::mutationGauss() {
+	// TODO: seems to be worse, could it be a bad implementation?
 	std::mt19937 e2(rd());
 	
 	for(int i = 0; i < populationSize; i++) {		
@@ -419,7 +372,7 @@ void Population::mutationGauss() {
 				int k = rng.uniform(0, 3);
 				
 				if (rng.uniform(0, 2)) {
-					std::normal_distribution<float> dist(solutions[i][j][k].x, 1.0);
+					std::normal_distribution<float> dist(solutions[i][j][k].x, 0.5);
 					float r1 = dist(e2);
 					
 					solutions[i][j][k].x = r1;
@@ -428,7 +381,7 @@ void Population::mutationGauss() {
 					else if (solutions[i][j][k].x < -1.0)
 						solutions[i][j][k].x = -1.0;
 				} else {
-					std::normal_distribution<float> dist(solutions[i][j][k].y, 1.0);
+					std::normal_distribution<float> dist(solutions[i][j][k].y, 0.5);
 					float r1 = dist(e2);
 					
 					solutions[i][j][k].y = r1;
@@ -440,7 +393,7 @@ void Population::mutationGauss() {
 			} else {
 				int k = rng.uniform(0, 4);
 
-				std::normal_distribution<float> dist(colors[i][j][k], 0.5);
+				std::normal_distribution<float> dist(colors[i][j][k], 0.25);
 				float r1 = dist(e2);
 
 				colors[i][j][k] = r1;

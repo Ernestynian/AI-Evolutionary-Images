@@ -1,15 +1,20 @@
 #include <cstdio>
-
-#include <stdio.h>
 #include <stdlib.h>
+#include <malloc.h>
+#include <fcntl.h>
+#include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "renderer.h"
 
 #include <X11/X.h>
 #include <X11/Xlib.h>
+#include <GL/glew.h>
 #include <GL/gl.h>
 #include <GL/glx.h>
 #include <GL/glu.h>
+
 
 typedef GLXContext(*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
 typedef Bool(*glXMakeContextCurrentARBProc)(Display*, GLXDrawable, GLXDrawable, GLXContext);
@@ -84,36 +89,100 @@ Renderer::Renderer(int width, int height) {
 			exit(1);
 		}
 	}
-
-	prepareOpenGL(width, height);
 #endif
 }
 
 
-void Renderer::prepareOpenGL(int width, int height) {
+void Renderer::prepareOpenGL(Mat& original) {
+	glewInit();
+	
 	glDisable(GL_DEPTH_TEST);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthMask(false);
 
-	glViewport(0, 0, width, height);
-
+	glPixelStorei(GL_PACK_ALIGNMENT, (original.step & 3) ? 1 : 4);
+	glPixelStorei(GL_PACK_ROW_LENGTH, original.step / original.elemSize());
+	
+	glViewport(0, 0, original.cols, original.rows);
+	
 	glClearColor(0, 0, 0, 0);
 
 	glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
 
-	//////////
+	/////////////////////////
+	
+	/*Mat temp;
+	cv::flip(original, temp, 0);
+	glGenTextures(1, &originalTexture);
+	glBindTexture(GL_TEXTURE_2D, originalTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, original.cols, original.rows,
+				0, GL_BGR, GL_UNSIGNED_BYTE, original.ptr());
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);*/
+	
+	/////////////////////////
+	
+	framebufferName = 0;
+	glGenFramebuffers(1, &framebufferName);
+	glBindFramebuffer(GL_FRAMEBUFFER, framebufferName);
+	
+	GLuint renderedTexture;
+	glGenTextures(1, &renderedTexture);
 
-	/*GLuint fbo, render_buf;
-	glGenFramebuffers(1,&fbo);
-	glGenRenderbuffers(1,&render_buf);
-	glBindRenderbuffer(render_buf);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_BGRA8, width, height);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, render_buf);*/
+	// "Bind" the newly created texture : all future texture functions will modify this texture
+	glBindTexture(GL_TEXTURE_2D, renderedTexture);
 
+	// Give an empty image to OpenGL ( the last "0" )
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, original.cols, original.rows, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	
+	
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderedTexture, 0);
+
+	// Set the list of draw buffers.
+	GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+	glDrawBuffers(1, DrawBuffers);
+	
+	assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+	
+	createShaders();
 }
+
+
+void Renderer::createShaders() {
+	assert(GLEW_ARB_fragment_shader);
+	
+	const char* fragmentShaderCode = textFileRead("diff.frag");
+	fragShader1 = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(fragShader1, 1, &fragmentShaderCode, nullptr);
+	glCompileShader(fragShader1);
+	
+	printShaderInfoLog(fragShader1);
+	
+	const char* fragmentShaderCode2 = textFileRead("sum.frag");
+	fragShader2 = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(fragShader2, 1, &fragmentShaderCode2, nullptr);
+	glCompileShader(fragShader2);
+	
+	printShaderInfoLog(fragShader2);
+	
+	p1 = glCreateProgram();
+	p2 = glCreateProgram();
+
+	glAttachShader(p1, fragShader1);
+	glAttachShader(p2, fragShader2);
+
+	glLinkProgram(p1);
+	glLinkProgram(p2);
+	
+	printProgramInfoLog(p1);
+	printProgramInfoLog(p2);
+}
+
 
 
 void Renderer::render(Point2f** v, Scalar* c, int tris, Mat& out) {
@@ -127,11 +196,14 @@ void Renderer::render(Point2f** v, Scalar* c, int tris, Mat& out) {
 
 
 void Renderer::renderGPU(Point2f** v, Scalar* c, int tris, Mat& out) {
-	glClear(GL_COLOR_BUFFER_BIT);
-
 	// glScalef won't work - tested
 	// no need to flip matrix either
 
+	glDisable(GL_TEXTURE_2D);
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, framebufferName);
+	glClear(GL_COLOR_BUFFER_BIT);
+	
 	glBegin(GL_TRIANGLES);
 	for(int j = 0; j < tris; j++) {
 		glColor4f(c[j][0], c[j][1], c[j][2], c[j][3]);
@@ -141,22 +213,30 @@ void Renderer::renderGPU(Point2f** v, Scalar* c, int tris, Mat& out) {
 		glVertex2f(v[j][2].x, v[j][2].y);
 	}
 	glEnd();
+	
+	///////// SECOND PASS /////////
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClear(GL_COLOR_BUFFER_BIT);
+	
+	GLuint texID = glGetUniformLocation(p1, "tex");
+	glUniform1i(texID, 0);
+	glUseProgram(p1);	
+	
+	glEnable(GL_TEXTURE_2D);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, framebufferName);
+	//glBindTexture(GL_TEXTURE_2D, originalTexture);
 
-	glFlush();
-
+	glBegin(GL_QUADS);
+		glTexCoord2i(0, 0); glVertex2f(-1.0, -1.0);
+		glTexCoord2i(0, 1); glVertex2f(-1.0,  1.0);
+		glTexCoord2i(1, 1); glVertex2f( 1.0,  1.0);
+		glTexCoord2i(1, 0); glVertex2f( 1.0, -1.0);
+	glEnd();
+	
 	// Copy OpenGL buffer data
 	glReadPixels(0, 0, out.cols, out.rows, GL_BGR, GL_UNSIGNED_BYTE, out.data);
-
-	/*GLuint pbo;
-	glGenBuffers(1,&pbo);
-	glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
-	glBufferData(GL_PIXEL_PACK_BUFFER, width*height*4, NULL, GL_DYNAMIC_READ);
-	
-	glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
-	glReadPixels(0,0,width,height,GL_BGRA,GL_UNSIGNED_BYTE,0); // 0 instead of a pointer, it is now an offset in the buffer.
-	//DO SOME OTHER STUFF (otherwise this is a waste of your time)
-	glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo); //Might not be necessary...
-	pixel_data = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);*/
 }
 
 
@@ -181,4 +261,64 @@ void Renderer::renderCPU(Point2f** v, Scalar* c, int tris, Mat& out) {
 
 		addWeighted(overlay, c[i][3], out, 1.0 - c[i][3], 0, out);
 	}
+}
+
+
+void Renderer::printShaderInfoLog(GLuint obj) {
+    int infologLength = 0;
+    int charsWritten  = 0;
+    char *infoLog;
+
+    glGetShaderiv(obj, GL_INFO_LOG_LENGTH,&infologLength);
+
+    if (infologLength > 0) {
+        infoLog = (char *)malloc(infologLength);
+        glGetShaderInfoLog(obj, infologLength, &charsWritten, infoLog);
+		printf("%s\n",infoLog);
+        free(infoLog);
+    }
+}
+
+
+void Renderer::printProgramInfoLog(GLuint obj) {
+    int infologLength = 0;
+    int charsWritten  = 0;
+    char *infoLog;
+
+    glGetProgramiv(obj, GL_INFO_LOG_LENGTH,&infologLength);
+
+    if (infologLength > 0) {
+        infoLog = (char *)malloc(infologLength);
+        glGetProgramInfoLog(obj, infologLength, &charsWritten, infoLog);
+		printf("%s\n",infoLog);
+        free(infoLog);
+    }
+}
+
+
+char* Renderer::textFileRead(const char* fn) {
+	FILE *fp;
+	char *content = NULL;
+
+	int f,count;
+	f = open(fn, O_RDONLY);
+
+	count = lseek(f, 0, SEEK_END);
+
+	close(f);
+
+	if (fn != NULL) {
+		fp = fopen(fn,"rt");
+
+		if (fp != NULL) {
+			if (count > 0) {
+				content = (char *)malloc(sizeof(char) * (count+1));
+				count = fread(content,sizeof(char),count,fp);
+				content[count] = '\0';
+			}
+			
+			fclose(fp);
+		}
+	}
+	return content;
 }
