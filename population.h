@@ -67,6 +67,7 @@ private:
 	
 	Renderer* renderer;
 	Mat* target;
+	Mat bestImage;
 	
 	// GENES
 	Scalar** colors;

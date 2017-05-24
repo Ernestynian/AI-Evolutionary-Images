@@ -28,6 +28,7 @@ Population::Population(Mat& target, int populationSize, int triangleCount)
 	normGrades = new NormalizedGrade[populationSize];
 
 	images = new Mat[populationSize];
+	bestImage = Mat(rows, cols, CV_8UC3, Scalar(0, 0, 0));
 
 	for(int i = 0; i < populationSize; i++) {
 		solutions  [i] = new Point2f*[triangleCount];
@@ -92,8 +93,9 @@ Population::~Population() {
 
 
 void Population::createImages() {
-	for(int i = 0; i < populationSize; i++)
-		renderer->render(solutions[i], colors[i], triangleCount, images[i]);
+	//for(int i = 0; i < populationSize; i++)
+		//renderer->render(solutions[i], colors[i], triangleCount, images[i
+		//renderer->render(solutions[i], colors[i], triangleCount, grades + i);
 }
 
 
@@ -104,11 +106,12 @@ void Population::fitness() {
 	
 	Mat temp;
 	for(int i = 0; i < populationSize; i++) {
-		absdiff(images[i], *target, temp);
+		/*absdiff(images[i], *target, temp);
         temp.convertTo(temp, CV_16UC3); //should be made optional in some way
         temp = temp.mul(temp);
 		Scalar s = sum(temp);
-		grades[i] = s[0] + s[1] + s[2];
+		grades[i] = s[0] + s[1] + s[2];*/
+		renderer->render(solutions[i], colors[i], triangleCount, grades + i);
 
 		if(grades[i] > worst)
 			worst = grades[i];
@@ -127,15 +130,19 @@ void Population::fitness() {
 
 
 Mat Population::topResult() {
-	return images[bestIndex];
+	renderer->renderGPU(solutions[bestIndex], colors[bestIndex], triangleCount, bestImage);
+	return bestImage;
+	//return images[bestIndex];
 }
 
 
 uint64 Population::topFitness() {
-	Mat temp;
-	absdiff(images[bestIndex], *target, temp);
-	Scalar s = sum(temp);
-	return s[0] + s[1] + s[2];
+	//Mat temp;
+	//absdiff(images[bestIndex], *target, temp);
+	//Scalar s = sum(temp);
+	//Scalar s = sum(images[bestIndex]);
+	//return s[0] + s[1] + s[2];
+	return grades[bestIndex];
 }
 
 

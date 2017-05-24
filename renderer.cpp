@@ -23,7 +23,8 @@ static glXMakeContextCurrentARBProc glXMakeContextCurrentARB = 0;
 
 #define RENDER_GPU
 
-Renderer::Renderer(int width, int height) {
+Renderer::Renderer(int width, int height):
+	width(width), height(height) {
 #ifdef RENDER_GPU
 	// source: https://sidvind.com/wiki/Opengl/windowless
 	static int visual_attribs[] = {
@@ -146,6 +147,28 @@ void Renderer::prepareOpenGL(Mat& original) {
 	
 	assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 	
+	/////////////////////////
+	
+	framebuffer2Name = 0;
+	glGenFramebuffers(1, &framebuffer2Name);
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer2Name);
+	
+	//GLuint renderedTexture;
+	glGenTextures(1, &diffTexture);
+
+	glBindTexture(GL_TEXTURE_2D, diffTexture);
+	
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, original.cols, original.rows, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, diffTexture, 0);
+
+	glDrawBuffers(1, DrawBuffers);
+	
+	assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+	
 	createShaders();
 	
 }
@@ -170,9 +193,9 @@ void Renderer::createShaders() {
 	glCompileShader(fragShader1);
 	glCompileShader(fragShader2);
 	
-	printShaderInfoLog(fragShader0);
-	printShaderInfoLog(fragShader1);
-	printShaderInfoLog(fragShader2);
+	printShaderInfoLog("f0", fragShader0);
+	printShaderInfoLog("f1", fragShader1);
+	printShaderInfoLog("f2", fragShader2);
 	
 	p0 = glCreateProgram();
 	p1 = glCreateProgram();
@@ -186,28 +209,32 @@ void Renderer::createShaders() {
 	glLinkProgram(p1);
 	glLinkProgram(p2);
 	
-	printProgramInfoLog(p0);
-	printProgramInfoLog(p1);
-	printProgramInfoLog(p2);
+	printProgramInfoLog("p0", p0);
+	printProgramInfoLog("p1", p1);
+	printProgramInfoLog("p2", p2);
 }
 
 
 
-void Renderer::render(Point2f** v, Scalar* c, int tris, Mat& out) {
+void Renderer::render(Point2f** v, Scalar* c, int tris, uint64* grades) {
 
 #ifdef RENDER_GPU
-	renderGPU(v, c, tris, out);
+	renderGPUx(v, c, tris, grades);
 #else
 	renderCPU(v, c, tris, out);
 #endif
 }
 
 
-void Renderer::renderGPU(Point2f** v, Scalar* c, int tris, Mat& out) {
+void Renderer::renderGPUx(Point2f** v, Scalar* c, int tris, uint64* grade) {
 	// glScalef won't work - tested
 	// no need to flip matrix either
 
 	glDisable(GL_TEXTURE_2D);
+	
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, framebufferName);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -224,9 +251,12 @@ void Renderer::renderGPU(Point2f** v, Scalar* c, int tris, Mat& out) {
 	}
 	glEnd();
 	
-	///////// SECOND PASS /////////
+	//glReadPixels(0, 0, out.cols, out.rows, GL_BGR, GL_UNSIGNED_BYTE, out.data);
 	
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	///////// SECOND PASS /////////
+	//glOrtho(0, out.cols, 0, out.rows, 0, 1);
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer2Name);
 	glClear(GL_COLOR_BUFFER_BIT);
 	
 	glUseProgram(p1);
@@ -246,9 +276,80 @@ void Renderer::renderGPU(Point2f** v, Scalar* c, int tris, Mat& out) {
 		glTexCoord2i(0, 1); glVertex2f(-1.0,  1.0);
 		glTexCoord2i(1, 1); glVertex2f( 1.0,  1.0);
 		glTexCoord2i(1, 0); glVertex2f( 1.0, -1.0);
+
+		/*glTexCoord2i(0, 0); glVertex2f(0, 0);
+		glTexCoord2i(0, 1); glVertex2f(0, out.rows);
+		glTexCoord2i(1, 1); glVertex2f(out.cols, out.rows);
+		glTexCoord2i(1, 0); glVertex2f(out.cols, 0);*/
 	glEnd();
 	
+	//glReadPixels(0, 0, out.cols, out.rows, GL_BGR, GL_UNSIGNED_BYTE, out.data);
+	
+	///////// THIRD PASS /////////
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0, width, 0, height, 0, 1);
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClear(GL_COLOR_BUFFER_BIT);
+	
+	glUseProgram(p2);
+	GLuint texID = glGetUniformLocation(p2, "diff");
+	GLuint imhID = glGetUniformLocation(p2, "imageHeight");
+	glUniform1i(texID, 0);
+	glUniform1i(imhID, height);
+	
+	glEnable(GL_TEXTURE_2D);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, diffTexture);
+
+	glBegin(GL_QUADS);
+		glTexCoord2i(0, 0); glVertex2f(0, 0);
+		glTexCoord2i(0, 1); glVertex2f(0, 10);
+		glTexCoord2i(1, 1); glVertex2f(width, 10);
+		glTexCoord2i(1, 0); glVertex2f(width, 0);
+	glEnd();
+	
+	//glReadPixels(0, 0, out.cols, 10, GL_BGR, GL_UNSIGNED_BYTE, out.data);
 	// Copy OpenGL buffer data
+	float* arr = new float[width];
+	glReadPixels(0, 0, width, 1, GL_RED, GL_FLOAT, arr);
+	float sum = 0.0;
+	for (int i = 0; i < width; ++i)
+		sum += arr[i];
+	
+	//printf("test: %f %f %f\n", arr[0], arr[1], arr[2]);
+	delete[] arr;
+	
+	*grade = uint64(sum * 10000000);
+	//printf("grade: %d\n", *grade);
+}
+
+
+void Renderer::renderGPU(Point2f** v, Scalar* c, int tris, Mat& out) {
+	// glScalef won't work - tested
+	// no need to flip matrix either
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
+	glDisable(GL_TEXTURE_2D);
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, framebufferName);
+	glClear(GL_COLOR_BUFFER_BIT);
+	
+	glUseProgram(p0);
+	
+	glBegin(GL_TRIANGLES);
+	for(int j = 0; j < tris; j++) {
+		glColor4f(c[j][0], c[j][1], c[j][2], c[j][3]);
+
+		glVertex2f(v[j][0].x, v[j][0].y);
+		glVertex2f(v[j][1].x, v[j][1].y);
+		glVertex2f(v[j][2].x, v[j][2].y);
+	}
+	glEnd();
+	
 	glReadPixels(0, 0, out.cols, out.rows, GL_BGR, GL_UNSIGNED_BYTE, out.data);
 }
 
@@ -277,7 +378,7 @@ void Renderer::renderCPU(Point2f** v, Scalar* c, int tris, Mat& out) {
 }
 
 
-void Renderer::printShaderInfoLog(GLuint obj) {
+void Renderer::printShaderInfoLog(const char* title, GLuint obj) {
     int infologLength = 0;
     int charsWritten  = 0;
     char *infoLog;
@@ -287,13 +388,13 @@ void Renderer::printShaderInfoLog(GLuint obj) {
     if (infologLength > 0) {
         infoLog = (char *)malloc(infologLength);
         glGetShaderInfoLog(obj, infologLength, &charsWritten, infoLog);
-		printf("%s\n",infoLog);
+		printf("%s\n%s\n", title, infoLog);
         free(infoLog);
     }
 }
 
 
-void Renderer::printProgramInfoLog(GLuint obj) {
+void Renderer::printProgramInfoLog(const char* title, GLuint obj) {
     int infologLength = 0;
     int charsWritten  = 0;
     char *infoLog;
@@ -303,7 +404,7 @@ void Renderer::printProgramInfoLog(GLuint obj) {
     if (infologLength > 0) {
         infoLog = (char *)malloc(infologLength);
         glGetProgramInfoLog(obj, infologLength, &charsWritten, infoLog);
-		printf("%s\n",infoLog);
+		printf("%s\n%s\n", title, infoLog);
         free(infoLog);
     }
 }
