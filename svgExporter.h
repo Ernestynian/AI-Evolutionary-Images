@@ -5,15 +5,14 @@
 #include <iostream>
 
 void saveTrianglesToSvg(const char* name, Point2f** points, Scalar* colors, int triangleCount, int cols, int rows) {
-    //open file
+    // open file
     std::ofstream outputFile;
     
     outputFile.open(name);
-    //write beginning
+    // write beginning
     outputFile << "<svg viewBox=\"0 0 " 
             << cols << " " << rows << "\">\n";
-    //write trangles
-    std::cout <<((points[0][0].x)*cols);
+    // write trangles
     for(int i = 0; i < triangleCount; i++) {
         outputFile << "<path style=\"fill:rgb("
                 << (int)(colors[i][0]*255)<<","

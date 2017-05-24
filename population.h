@@ -62,13 +62,14 @@ private:
 	const double mutationChance = 0.01;
 	const float  mutationSize   = 0.10;
 
-	const int triangleCount     = 150;
+	const int triangleCount     = 100;
 	const int populationSize    = 50;
 	int cols, rows;
 	
 	Renderer* renderer;
 	Mat* target;
 	Mat bestImage;
+	uint64 bestFitness;
 	
 	// GENES
 	Scalar** colors;
@@ -82,7 +83,6 @@ private:
 	uint64* grades;
 	uint64 worst, best;
 	int bestIndex;
-	Mat* images;
 	
 	NormalizedGrade* normGrades;
 	

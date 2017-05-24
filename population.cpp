@@ -25,13 +25,11 @@ Population::Population(Mat& target)
 
 	normGrades = new NormalizedGrade[populationSize];
 
-	images = new Mat[populationSize];
 	bestImage = Mat(rows, cols, CV_8UC3, Scalar(0, 0, 0));
 
 	for(int i = 0; i < populationSize; i++) {
 		solutions  [i] = new Point2f*[triangleCount];
 		colors     [i] = new Scalar[triangleCount];
-		images     [i] = Mat(rows, cols, CV_8UC3, Scalar(0, 0, 0));
 		
 		if (i < parentsAmount) {
 			p_solutions[i] = new Point2f*[triangleCount];
@@ -83,29 +81,17 @@ Population::~Population() {
 	delete[] selected;
 
 	delete[] normGrades;
-
-	delete[] images;
 	
 	delete renderer;
 }
 
 
 void Population::fitness() {
-	//for(int i = 0; i < populationSize; i++)
-		//renderer->render(solutions[i], colors[i], triangleCount, images[i
-		//renderer->render(solutions[i], colors[i], triangleCount, grades + i);
-	
 	worst = 0;
 	best = LLONG_MAX;
 	bestIndex = 0;
 	
-	Mat temp;
 	for(int i = 0; i < populationSize; i++) {
-		/*absdiff(images[i], *target, temp);
-        temp.convertTo(temp, CV_16UC3); //should be made optional in some way
-        temp = temp.mul(temp);
-		Scalar s = sum(temp);
-		grades[i] = s[0] + s[1] + s[2];*/
 		renderer->render(solutions[i], colors[i], triangleCount, grades + i);
 
 		if(grades[i] > worst)
@@ -117,27 +103,24 @@ void Population::fitness() {
 		}
 	}
 
-	for(int i = 0; i < populationSize; i++) {
-		//printf("%d: %lld\n", i, grades[i]);
+	for(int i = 0; i < populationSize; i++)
 		grades[i] = worst - grades[i];
-	}
+	
+	renderer->renderImage(solutions[bestIndex], colors[bestIndex], triangleCount, bestImage);
+	Mat temp;
+	absdiff(bestImage, *target, temp);
+	Scalar s = sum(temp);
+	bestFitness = s[0] + s[1] + s[2];
 }
 
 
 Mat Population::topResult() {
-	renderer->renderImage(solutions[bestIndex], colors[bestIndex], triangleCount, bestImage);
 	return bestImage;
-	//return images[bestIndex];
 }
 
 
 uint64 Population::topFitness() {
-	//Mat temp;
-	//absdiff(images[bestIndex], *target, temp);
-	//Scalar s = sum(temp);
-	//Scalar s = sum(images[bestIndex]);
-	//return s[0] + s[1] + s[2];
-	return grades[bestIndex];
+	return bestFitness;
 }
 
 
@@ -177,7 +160,7 @@ void Population::selectionRoulette() {
 	double sum = 0.f;
 	for(int i = 0; i < populationSize; ++i) {
 		selected[i] = false;
-		sum += grades[i] ; // TODO: change to grades[i] * grades[i]
+		sum += grades[i];
 	}
 
 	assert(sum != 0);
@@ -230,7 +213,7 @@ void Population::selectionBestOnes() {
 	double sum = 0.f;
 	for(int i = 0; i < populationSize; ++i) {
 		selected[i] = false;
-		sum += grades[i]; // TODO: change to grades[i] * grades[i]
+		sum += grades[i];
 	}
 
 	//assert(sum != 0);

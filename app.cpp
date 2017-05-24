@@ -25,7 +25,7 @@ void App::run() {
 		"spongebob.jpg" // 4
 	}[ 1 ]);
 	
-	worstFitness = (long long)input.cols * (long long)input.rows * 3 * 255;
+	worstFitness = (uint64)input.cols * (uint64)input.rows * 3 * 255;
 	
 	Population population(input);
 
