@@ -2,6 +2,7 @@
 #include <opencv2/core.hpp>
 
 #include "population.h"
+#include "svgExporter.h"
 
 
 Population::Population(Mat& target, int populationSize, int triangleCount)
@@ -412,4 +413,8 @@ void Population::mutationGauss() {
 			}
 		}
 	}
+}
+
+void Population::saveBestAs(char* name) {
+    saveTrianglesToSvg(name, solutions[bestIndex], colors[bestIndex], triangleCount, cols, rows);
 }

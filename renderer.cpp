@@ -305,8 +305,8 @@ void Renderer::renderGPUx(Point2f** v, Scalar* c, int tris, uint64* grade) {
 
 	glBegin(GL_QUADS);
 		glTexCoord2i(0, 0); glVertex2f(0, 0);
-		glTexCoord2i(0, 1); glVertex2f(0, 10);
-		glTexCoord2i(1, 1); glVertex2f(width, 10);
+		glTexCoord2i(0, 1); glVertex2f(0, 1);
+		glTexCoord2i(1, 1); glVertex2f(width, 1);
 		glTexCoord2i(1, 0); glVertex2f(width, 0);
 	glEnd();
 	

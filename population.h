@@ -43,6 +43,8 @@ public:
 	void createImages();
 	Mat topResult();
 	uint64 topFitness();
+    
+    void saveBestAs(char* name);
 	
 private:
 	void selectionBestOnes();

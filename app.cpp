@@ -77,6 +77,7 @@ void App::run() {
 	}
 	
 	drawImages(population.topResult(), input, bestImage, i, bestFitness);
+    population.saveBestAs("result.svg");
 	waitKey(0);
 }
 
