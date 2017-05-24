@@ -97,7 +97,8 @@ void Renderer::prepareOpenGL(Mat& original) {
 	glewInit();
 	
 	glDisable(GL_DEPTH_TEST);
-
+	glEnable(GL_TEXTURE_2D);
+	
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthMask(false);
@@ -113,14 +114,14 @@ void Renderer::prepareOpenGL(Mat& original) {
 
 	/////////////////////////
 	
-	/*Mat temp;
+	Mat temp;
 	cv::flip(original, temp, 0);
 	glGenTextures(1, &originalTexture);
 	glBindTexture(GL_TEXTURE_2D, originalTexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, original.cols, original.rows,
 				0, GL_BGR, GL_UNSIGNED_BYTE, original.ptr());
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);*/
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	
 	/////////////////////////
 	
@@ -128,57 +129,64 @@ void Renderer::prepareOpenGL(Mat& original) {
 	glGenFramebuffers(1, &framebufferName);
 	glBindFramebuffer(GL_FRAMEBUFFER, framebufferName);
 	
-	GLuint renderedTexture;
+	//GLuint renderedTexture;
 	glGenTextures(1, &renderedTexture);
 
-	// "Bind" the newly created texture : all future texture functions will modify this texture
 	glBindTexture(GL_TEXTURE_2D, renderedTexture);
-
-	// Give an empty image to OpenGL ( the last "0" )
+	
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, original.cols, original.rows, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	
-	
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderedTexture, 0);
 
-	// Set the list of draw buffers.
 	GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
 	glDrawBuffers(1, DrawBuffers);
 	
 	assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 	
 	createShaders();
+	
 }
 
 
 void Renderer::createShaders() {
 	assert(GLEW_ARB_fragment_shader);
 	
-	const char* fragmentShaderCode = textFileRead("diff.frag");
-	fragShader1 = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragShader1, 1, &fragmentShaderCode, nullptr);
-	glCompileShader(fragShader1);
-	
-	printShaderInfoLog(fragShader1);
-	
+	const char* fragmentShaderCode0 = textFileRead("render.frag");
+	const char* fragmentShaderCode1 = textFileRead("diff.frag");
 	const char* fragmentShaderCode2 = textFileRead("sum.frag");
+	
+	fragShader0 = glCreateShader(GL_FRAGMENT_SHADER);
+	fragShader1 = glCreateShader(GL_FRAGMENT_SHADER);
 	fragShader2 = glCreateShader(GL_FRAGMENT_SHADER);
+	
+	glShaderSource(fragShader0, 1, &fragmentShaderCode0, nullptr);
+	glShaderSource(fragShader1, 1, &fragmentShaderCode1, nullptr);
 	glShaderSource(fragShader2, 1, &fragmentShaderCode2, nullptr);
+	
+	glCompileShader(fragShader0);
+	glCompileShader(fragShader1);
 	glCompileShader(fragShader2);
 	
+	printShaderInfoLog(fragShader0);
+	printShaderInfoLog(fragShader1);
 	printShaderInfoLog(fragShader2);
 	
+	p0 = glCreateProgram();
 	p1 = glCreateProgram();
 	p2 = glCreateProgram();
 
+	glAttachShader(p0, fragShader0);
 	glAttachShader(p1, fragShader1);
 	glAttachShader(p2, fragShader2);
 
+	glLinkProgram(p0);
 	glLinkProgram(p1);
 	glLinkProgram(p2);
 	
+	printProgramInfoLog(p0);
 	printProgramInfoLog(p1);
 	printProgramInfoLog(p2);
 }
@@ -204,6 +212,8 @@ void Renderer::renderGPU(Point2f** v, Scalar* c, int tris, Mat& out) {
 	glBindFramebuffer(GL_FRAMEBUFFER, framebufferName);
 	glClear(GL_COLOR_BUFFER_BIT);
 	
+	glUseProgram(p0);
+	
 	glBegin(GL_TRIANGLES);
 	for(int j = 0; j < tris; j++) {
 		glColor4f(c[j][0], c[j][1], c[j][2], c[j][3]);
@@ -219,14 +229,17 @@ void Renderer::renderGPU(Point2f** v, Scalar* c, int tris, Mat& out) {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	
-	GLuint texID = glGetUniformLocation(p1, "tex");
-	glUniform1i(texID, 0);
-	glUseProgram(p1);	
+	glUseProgram(p1);
+	GLuint tex1ID = glGetUniformLocation(p1, "render");
+	GLuint tex2ID = glGetUniformLocation(p1, "orig");
+	glUniform1i(tex1ID, 0);
+	glUniform1i(tex2ID, 1);
 	
 	glEnable(GL_TEXTURE_2D);
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, framebufferName);
-	//glBindTexture(GL_TEXTURE_2D, originalTexture);
+	glBindTexture(GL_TEXTURE_2D, renderedTexture);
+	glActiveTexture(GL_TEXTURE0 + 1);
+	glBindTexture(GL_TEXTURE_2D, originalTexture);
 
 	glBegin(GL_QUADS);
 		glTexCoord2i(0, 0); glVertex2f(-1.0, -1.0);

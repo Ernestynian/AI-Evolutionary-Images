@@ -15,6 +15,7 @@
       <itemPath>Cat.jpg</itemPath>
       <itemPath>MonaLisa.jpg</itemPath>
       <itemPath>diff.frag</itemPath>
+      <itemPath>render.frag</itemPath>
       <itemPath>sum.frag</itemPath>
     </logicalFolder>
     <logicalFolder name="SourceFiles"
@@ -78,6 +79,8 @@
       </item>
       <item path="population.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="render.frag" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="renderer.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="renderer.h" ex="false" tool="3" flavor2="0">
@@ -133,6 +136,8 @@
       </item>
       <item path="population.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="render.frag" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="renderer.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="renderer.h" ex="false" tool="3" flavor2="0">
@@ -177,6 +182,8 @@
       <item path="population.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="population.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="render.frag" ex="false" tool="3" flavor2="0">
       </item>
       <item path="renderer.cpp" ex="false" tool="1" flavor2="0">
       </item>

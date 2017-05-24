@@ -17,8 +17,8 @@ public:
 	
 private:
 	void createShaders();
-	uint fragShader1, fragShader2;
-	uint p1, p2;
+	uint fragShader0, fragShader1, fragShader2;
+	uint p0, p1, p2;
 	
 	char* textFileRead(const char* fn);
 	void printShaderInfoLog(uint obj);
@@ -28,6 +28,7 @@ private:
 	void renderGPU(Point2f** v, Scalar* c, int tris, Mat& out);
 	
 	uint originalTexture;
+	uint renderedTexture;
 	uint framebufferName;
 };
 
