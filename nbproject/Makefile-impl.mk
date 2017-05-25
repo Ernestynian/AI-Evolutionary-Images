@@ -24,7 +24,7 @@ CLEAN_SUBPROJECTS=${CLEAN_SUBPROJECTS_${SUBPROJECTS}}
 
 
 # Project Name
-PROJECTNAME=Projekt
+PROJECTNAME=AI-Evolutionary-Images
 
 # Active Configuration
 DEFAULTCONF=Debug
