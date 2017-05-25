@@ -13,10 +13,13 @@
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
                    projectFiles="true">
-      <itemPath>MonaLisa.jpg</itemPath>
+      <itemPath>BitwaPodGrunwaldem.jpg</itemPath>
       <itemPath>cat.jpg</itemPath>
       <itemPath>diff.frag</itemPath>
       <itemPath>render.frag</itemPath>
+      <itemPath>saitama.jpg</itemPath>
+      <itemPath>scream.jpg</itemPath>
+      <itemPath>spongebob.jpg</itemPath>
       <itemPath>sum.frag</itemPath>
     </logicalFolder>
     <logicalFolder name="SourceFiles"
@@ -60,7 +63,7 @@
           <commandLine>-lGLEW -lGLU -lGL -lX11</commandLine>
         </linkerTool>
       </compileType>
-      <item path="MonaLisa.jpg" ex="false" tool="3" flavor2="0">
+      <item path="BitwaPodGrunwaldem.jpg" ex="false" tool="3" flavor2="0">
       </item>
       <item path="app.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -85,6 +88,12 @@
       <item path="renderer.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="renderer.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="saitama.jpg" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="scream.jpg" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="spongebob.jpg" ex="false" tool="3" flavor2="0">
       </item>
       <item path="sum.frag" ex="false" tool="3" flavor2="0">
       </item>
@@ -119,7 +128,7 @@
           <commandLine>-lGLEW -lGLU -lGL -lX11</commandLine>
         </linkerTool>
       </compileType>
-      <item path="MonaLisa.jpg" ex="false" tool="3" flavor2="0">
+      <item path="BitwaPodGrunwaldem.jpg" ex="false" tool="3" flavor2="0">
       </item>
       <item path="app.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -144,6 +153,12 @@
       <item path="renderer.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="renderer.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="saitama.jpg" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="scream.jpg" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="spongebob.jpg" ex="false" tool="3" flavor2="0">
       </item>
       <item path="sum.frag" ex="false" tool="3" flavor2="0">
       </item>
@@ -168,7 +183,7 @@
           <commandLine>-lGLEW -lGLU -lGL -lX11</commandLine>
         </linkerTool>
       </compileType>
-      <item path="MonaLisa.jpg" ex="false" tool="3" flavor2="0">
+      <item path="BitwaPodGrunwaldem.jpg" ex="false" tool="3" flavor2="0">
       </item>
       <item path="app.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -193,6 +208,12 @@
       <item path="renderer.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="renderer.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="saitama.jpg" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="scream.jpg" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="spongebob.jpg" ex="false" tool="3" flavor2="0">
       </item>
       <item path="sum.frag" ex="false" tool="3" flavor2="0">
       </item>

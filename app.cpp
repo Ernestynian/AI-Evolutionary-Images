@@ -20,11 +20,12 @@ App::App()
 
 void App::run() {
 	Mat input = imread((const char*[]) { "",
-		"MonaLisa.jpg", // 1
-		"cat.jpg",		// 2
-		"mona.jpg",		// 3
-		"spongebob.jpg" // 4
-	}[ 1 ]);
+		"BitwaPodGrunwaldem.jpg", // 1
+		"cat.jpg",		          // 2
+		"spongebob.jpg",          // 3
+		"saitama.jpg",            // 4
+		"scream.jpg",             // 5
+	}[ 6 ]);
 	
 	int newWidth = input.cols - (input.cols % 4);
 	resize(input, input, Size(newWidth, input.rows), 0, 0, INTER_CUBIC);
@@ -58,12 +59,12 @@ void App::run() {
 		population.fitness();
 		high_resolution_clock::time_point t5 = high_resolution_clock::now();
 
-		auto durationSel = duration_cast<microseconds>( t2 - t1 ).count();
+		/*auto durationSel = duration_cast<microseconds>( t2 - t1 ).count();
 		auto durationCro = duration_cast<microseconds>( t3 - t2 ).count();
 		auto durationMut = duration_cast<microseconds>( t4 - t3 ).count();
 		auto durationCre = duration_cast<microseconds>( t5 - t4 ).count();
 		
-		/*cout << "SCM: "
+		cout << "SCM: "
 			 << std::setw(3) << durationSel
 			 << std::setw(5) << durationCro 
 		     << std::setw(4) << durationMut
