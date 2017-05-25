@@ -14,25 +14,30 @@
 using namespace cv;
 
 
-enum SelectionType {
+enum class SelectionType {
 	Roulette,
-	BestOnes
+	BestOnes,
+	Random
 };
 
-enum CrossoverType {
+enum class CrossoverType {
 	Kill,
-	WithParents
+	WithParents,
+	Random
 };
 
-enum MutationType {
+enum class MutationType {
 	Uniform,
-	Gauss
+	Gauss,
+	Random
 };
 
 class Population {
 public:
 	Population(Mat& target);
 	~Population();
+	
+	void setMutationChance(float min, float max);
 	
 	void selection(SelectionType type);
 	void crossover(CrossoverType type);
@@ -57,13 +62,12 @@ private:
 	
 	Point** copySolution(Point** solution);
 	
-	// TODO: dynamic changes
-	const double selectionRate  = 0.15;
-	const double mutationChance = 0.01;
-	const float  mutationSize   = 0.10;
+	double selectionRate      = 0.15;
+	double mutationChance     = 0.01;
+	float  mutationSize       = 0.10;
 
-	const int triangleCount     = 250;
-	const int populationSize    = 50;
+	const int triangleCount   = 250;
+	const int populationSize  = 50;
 	int cols, rows;
 	
 	Renderer* renderer;

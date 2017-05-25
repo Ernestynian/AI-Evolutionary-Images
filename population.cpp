@@ -44,18 +44,19 @@ Population::Population(Mat& target)
 								* rng.uniform(0.3f, 0.8f), 0.2f));
 			
 			int a = 0;
-			int b = rows;
+			int w = cols;
+			int h = rows;
 			
-			int x = rng.uniform(a, b);
-			int y = rng.uniform(a, b);			
+			int x = rng.uniform(a + w / 8, w - w / 8);
+			int y = rng.uniform(a + h / 8, h - h / 8);			
 			
 			solutions[i][j]   = new Point2i[3];
-			solutions[i][j][0].x = x + rng.uniform(a, b) - b / 2;
-			solutions[i][j][0].y = y + rng.uniform(a, b) - b / 2;
-			solutions[i][j][1].x = x + rng.uniform(a, b) - b / 2;
-			solutions[i][j][1].y = y + rng.uniform(a, b) - b / 2;
-			solutions[i][j][2].x = x + rng.uniform(a, b) - b / 2;
-			solutions[i][j][2].y = y + rng.uniform(a, b) - b / 2;
+			solutions[i][j][0].x = x + rng.uniform(a, w) - w / 2;
+			solutions[i][j][0].y = y + rng.uniform(a, h) - h / 2;
+			solutions[i][j][1].x = x + rng.uniform(a, w) - w / 2;
+			solutions[i][j][1].y = y + rng.uniform(a, h) - h / 2;
+			solutions[i][j][2].x = x + rng.uniform(a, w) - w / 2;
+			solutions[i][j][2].y = y + rng.uniform(a, h) - h / 2;
 			
 			if (i < parentsAmount)
 				p_solutions[i][j] = new Point2i[3];
@@ -113,18 +114,18 @@ void Population::fitness() {
 }
 
 
-Mat Population::topResult() {
-	return bestImage;
-}
-
-
-uint64 Population::topFitness() {
-	return bestFitness;
+void Population::setMutationChance(float min, float max) {
+	mutationChance = rng.uniform(min, max);
 }
 
 
 void Population::selection(SelectionType type) {
-	if (type == SelectionType::Roulette)
+	if (type == SelectionType::Random) {
+		if (rng.uniform(0, 2))
+			selectionRoulette();
+		else
+			selectionBestOnes();
+	} else if (type == SelectionType::Roulette)
 		selectionRoulette();
 	else
 		selectionBestOnes();
@@ -132,8 +133,12 @@ void Population::selection(SelectionType type) {
 
 
 void Population::crossover(CrossoverType type) {
-	if (type == CrossoverType::Kill)
-		// Create new population from parents
+	if (type == CrossoverType::Random) {
+		if (rng.uniform(0, 2))
+			crossoverKill();
+		else
+			crossoverWithParents();
+	} else if (type == CrossoverType::Kill)
 		crossoverKill();
 	else
 		crossoverWithParents();
@@ -141,10 +146,25 @@ void Population::crossover(CrossoverType type) {
 
 
 void Population::mutation(MutationType type) {
-	if (type == MutationType::Uniform)
+	if (type == MutationType::Random) {
+		if (rng.uniform(0, 2))
+			mutationUniform();
+		else
+			mutationGauss();
+	} else if (type == MutationType::Uniform)
 		mutationUniform();
 	else
 		mutationGauss();
+}
+
+
+Mat Population::topResult() {
+	return bestImage;
+}
+
+
+uint64 Population::topFitness() {
+	return bestFitness;
 }
 
 
@@ -161,8 +181,6 @@ void Population::selectionRoulette() {
 		selected[i] = false;
 		sum += grades[i];
 	}
-
-	assert(sum != 0);
 
 	for(int i = 0; i < populationSize; ++i)
 		normGrades[i].set((double)(grades[i]) / sum, i);
@@ -215,8 +233,6 @@ void Population::selectionBestOnes() {
 		sum += grades[i];
 	}
 
-	//assert(sum != 0);
-
 	for(int i = 0; i < populationSize; ++i)
 		normGrades[i].set((double)(grades[i]) / sum, i);
 
@@ -240,6 +256,7 @@ void Population::selectionBestOnes() {
 
 
 void Population::crossoverKill() {
+	// Create new population from parents
 	for(int i = 0; i < populationSize; i++) {
 		int a, b; // parents
 		do {
@@ -303,10 +320,10 @@ void Population::mutationUniform() {
 				
 				solutions[i][j][k].x += r1 * sign;
 
-				if(solutions[i][j][k].x > cols)
-					solutions[i][j][k].x = cols;
-				else if(solutions[i][j][k].x < 0)
-					solutions[i][j][k].x = 0;
+				if(solutions[i][j][k].x > cols * 1.2)
+					solutions[i][j][k].x = cols * 1.2;
+				else if(solutions[i][j][k].x < cols * -0.2)
+					solutions[i][j][k].x = cols * -0.2;
 			}
 			
 			for (int k = 0; k < 3; ++k) {
@@ -318,10 +335,10 @@ void Population::mutationUniform() {
 
 				solutions[i][j][k].y += r1 * sign;
 
-				if(solutions[i][j][k].y > rows)
-					solutions[i][j][k].y = rows;
-				else if(solutions[i][j][k].y < 0)
-					solutions[i][j][k].y = 0;
+				if(solutions[i][j][k].y > rows * 1.2)
+					solutions[i][j][k].y = rows * 1.2;
+				else if(solutions[i][j][k].y < rows * -0.2)
+					solutions[i][j][k].y = rows * -0.2;
 			}
 			
 			for (int k = 0; k < 4; ++k) {
@@ -360,24 +377,24 @@ void Population::mutationGauss() {
 					
 					solutions[i][j][k].x = dist(e2);
 					
-					if(solutions[i][j][k].x > cols)
-						solutions[i][j][k].x = cols;
-					else if(solutions[i][j][k].x < 0)
-						solutions[i][j][k].x = 0;
+					if(solutions[i][j][k].x > cols * 1.2)
+						solutions[i][j][k].x = cols * 1.2;
+					else if(solutions[i][j][k].x < cols * -0.2)
+						solutions[i][j][k].x = cols * -0.2;
 				} else {
 					std::normal_distribution<float> dist(solutions[i][j][k].y, rows / 2);
 					
 					solutions[i][j][k].y = dist(e2);
 					
-					if(solutions[i][j][k].y > rows)
-						solutions[i][j][k].y = rows;
-					else if(solutions[i][j][k].y < 0)
-						solutions[i][j][k].y = 0;
+					if(solutions[i][j][k].y > rows * 1.2)
+						solutions[i][j][k].y = rows * 1.2;
+					else if(solutions[i][j][k].y < rows * -0.2)
+						solutions[i][j][k].y = rows * -0.2;
 				}				
 			} else {
 				int k = rng.uniform(0, 4);
 
-				std::normal_distribution<float> dist(colors[i][j][k], 1.0);
+				std::normal_distribution<float> dist(colors[i][j][k], 0.5);
 
 				colors[i][j][k] = dist(e2);
 				

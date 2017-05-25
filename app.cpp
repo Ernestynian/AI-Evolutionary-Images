@@ -14,7 +14,7 @@ App::App()
 	  pPos(5, 16),
 	  fPos(5, 36)
 {
-	
+	bestFitness = ULONG_MAX;
 }
 
 
@@ -24,7 +24,7 @@ void App::run() {
 		"cat.jpg",		// 2
 		"mona.jpg",		// 3
 		"spongebob.jpg" // 4
-	}[ 2 ]);
+	}[ 1 ]);
 	
 	int newWidth = input.cols - (input.cols % 4);
 	resize(input, input, Size(newWidth, input.rows), 0, 0, INTER_CUBIC);
@@ -32,14 +32,21 @@ void App::run() {
 	worstFitness = (uint64)input.cols * (uint64)input.rows * 3 * 255;
 	
 	Population population(input);
-
 	population.fitness();
 
-	uint64 bestFitness = ULONG_MAX;
 	Mat bestImage;
+	
+	population.setMutationChance(0.02f, 0.04f);
 	
 	int i = 0;
 	for(;; ++i) {
+		if (i % 10 == 0) {
+			if (i > 1000)
+				population.setMutationChance(0.002f, 0.01f);
+			else if (i > 100)
+				population.setMutationChance(0.01f, 0.02f);
+		}
+		
 		high_resolution_clock::time_point t1 = high_resolution_clock::now();
 		population.selection(SelectionType::BestOnes);
 		high_resolution_clock::time_point t2 = high_resolution_clock::now();
@@ -68,20 +75,20 @@ void App::run() {
 			population.topResult().copyTo(bestImage);
 		}
 		
-		drawImages(population.topResult(), input, bestImage, i, bestFitness);
+		drawImages(population.topResult(), input, bestImage, i);
 		
 		// Stop when key is pressed
 		if (waitKey(1) == 'q')
 			break;
 	}
 	
-	drawImages(population.topResult(), input, bestImage, i, bestFitness);
+	drawImages(population.topResult(), input, bestImage, i);
     population.saveBestAs("result.svg");
 	waitKey(0);
 }
 
 
-void App::drawImages(Mat image1, Mat image2, Mat image3, int pid, uint64 fitness) {
+void App::drawImages(Mat image1, Mat image2, Mat image3, int pid) {
 	Mat dst = Mat(image1.rows, image1.cols * 3, CV_8UC3, Scalar(0, 0, 0));
 
 	Mat output = dst(Rect(0, 0, image1.cols, image1.rows));
@@ -95,7 +102,7 @@ void App::drawImages(Mat image1, Mat image2, Mat image3, int pid, uint64 fitness
 	putText(dst, buffer, pPos, FONT_HERSHEY_PLAIN, 1.0, black, 2, CV_AA);
 	putText(dst, buffer, pPos, FONT_HERSHEY_PLAIN, 1.0, white, 1, CV_AA);
 	
-	sprintf(buffer, "Fit: %.2f%%", 100.0 * (1.0 - (double)fitness / worstFitness) );
+	sprintf(buffer, "Fit: %.2f%%", 100.0 * (1.0 - bestFitness / worstFitness) );
 	putText(dst, buffer, fPos, FONT_HERSHEY_PLAIN, 1.0, black, 2, CV_AA);
 	putText(dst, buffer, fPos, FONT_HERSHEY_PLAIN, 1.0, white, 1, CV_AA);
 	

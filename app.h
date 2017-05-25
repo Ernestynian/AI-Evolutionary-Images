@@ -12,14 +12,15 @@ public:
 
 	void run();
 private:
-	void drawImages(Mat image1, Mat image2, Mat image3, int pid, uint64 fitness);
+	void drawImages(Mat image1, Mat image2, Mat image3, int pid);
 	char buffer[128];
 
 	Scalar white, black;
 	Point pPos;
 	Point fPos;
 	
-	long long worstFitness;
+	double worstFitness;
+	double bestFitness;
 	
 	const char* windowTitle = "AI Evolutionary Images";	
 };

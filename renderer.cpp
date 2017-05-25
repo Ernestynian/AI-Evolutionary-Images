@@ -302,7 +302,7 @@ uint64 Renderer::renderGPU(Point2i** v, Scalar* c, int tris) {
 	for (int i = 0; i < width; ++i)
 		sum += columnAvgs[i];
 	
-	return uint64(sum * width * height * 255);
+	return uint64(sum * width * height * 2550);
 }
 
 
