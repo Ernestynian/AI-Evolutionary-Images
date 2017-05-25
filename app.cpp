@@ -25,7 +25,7 @@ void App::run() {
 		"spongebob.jpg",          // 3
 		"saitama.jpg",            // 4
 		"scream.jpg",             // 5
-	}[ 6 ]);
+	}[ 2 ]);
 	
 	int newWidth = input.cols - (input.cols % 4);
 	resize(input, input, Size(newWidth, input.rows), 0, 0, INTER_CUBIC);
