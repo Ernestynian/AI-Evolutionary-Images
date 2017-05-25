@@ -123,7 +123,8 @@ void Renderer::prepareOpenGL() {
 	
 	glClearColor(0, 0, 0, 0);
 
-	glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
+	//glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
+	glOrtho(0, width, 0, height, 0, 1);
 
 	/////////////////////////
 	
@@ -225,15 +226,15 @@ void Renderer::createShaders() {
 
 
 
-void Renderer::render(Point2f** v, Scalar* c, int tris, uint64* grade) {
+uint64 Renderer::render(Point2i** v, Scalar* c, int tris) {
 	if (isHardwareAccelerated)
-		*grade = renderGPU(v, c, tris);
+		return renderGPU(v, c, tris);
 	else
-		*grade = renderCPU(v, c, tris);
+		return renderCPU(v, c, tris);
 }
 
 
-void Renderer::renderImage(Point2f** v, Scalar* c, int tris, Mat& out) {
+void Renderer::renderImage(Point2i** v, Scalar* c, int tris, Mat& out) {
 	if (isHardwareAccelerated)
 		renderImageGPU(v, c, tris, out);
 	else
@@ -241,15 +242,11 @@ void Renderer::renderImage(Point2f** v, Scalar* c, int tris, Mat& out) {
 }
 
 
-uint64 Renderer::renderGPU(Point2f** v, Scalar* c, int tris) {
+uint64 Renderer::renderGPU(Point2i** v, Scalar* c, int tris) {
 	// glScalef won't work - tested
 	// no need to flip matrix either
 
 	glDisable(GL_TEXTURE_2D);
-	
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, framebufferName);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -260,14 +257,13 @@ uint64 Renderer::renderGPU(Point2f** v, Scalar* c, int tris) {
 	for(int j = 0; j < tris; j++) {
 		glColor4f(c[j][0], c[j][1], c[j][2], c[j][3]);
 
-		glVertex2f(v[j][0].x, v[j][0].y);
-		glVertex2f(v[j][1].x, v[j][1].y);
-		glVertex2f(v[j][2].x, v[j][2].y);
+		glVertex2i(v[j][0].x, v[j][0].y);
+		glVertex2i(v[j][1].x, v[j][1].y);
+		glVertex2i(v[j][2].x, v[j][2].y);
 	}
 	glEnd();
 	
 	///////// SECOND PASS /////////
-	//glOrtho(0, out.cols, 0, out.rows, 0, 1);
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer2Name);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -285,16 +281,13 @@ uint64 Renderer::renderGPU(Point2f** v, Scalar* c, int tris) {
 	glBindTexture(GL_TEXTURE_2D, originalTexture);
 
 	glBegin(GL_QUADS);
-		glTexCoord2i(0, 0); glVertex2f(-1.0, -1.0);
-		glTexCoord2i(0, 1); glVertex2f(-1.0,  1.0);
-		glTexCoord2i(1, 1); glVertex2f( 1.0,  1.0);
-		glTexCoord2i(1, 0); glVertex2f( 1.0, -1.0);
+		glTexCoord2i(0, 0); glVertex2i(0,     0);
+		glTexCoord2i(0, 1); glVertex2i(0,     height);
+		glTexCoord2i(1, 1); glVertex2i(width, height);
+		glTexCoord2i(1, 0); glVertex2i(width, 0);
 	glEnd();
 	
 	///////// THIRD PASS /////////
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0, width, 0, height, 0, 1);
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -310,10 +303,10 @@ uint64 Renderer::renderGPU(Point2f** v, Scalar* c, int tris) {
 	glBindTexture(GL_TEXTURE_2D, diffTexture);
 
 	glBegin(GL_QUADS);
-		glTexCoord2i(0, 0); glVertex2f(0, 0);
-		glTexCoord2i(0, 1); glVertex2f(0, 1);
-		glTexCoord2i(1, 1); glVertex2f(width, 1);
-		glTexCoord2i(1, 0); glVertex2f(width, 0);
+		glTexCoord2i(0, 0); glVertex2i(0,     0);
+		glTexCoord2i(0, 1); glVertex2i(0,     1);
+		glTexCoord2i(1, 1); glVertex2i(width, 1);
+		glTexCoord2i(1, 0); glVertex2i(width, 0);
 	glEnd();
 	
 	// Copy OpenGL buffer data
@@ -326,13 +319,10 @@ uint64 Renderer::renderGPU(Point2f** v, Scalar* c, int tris) {
 }
 
 
-void Renderer::renderImageGPU(Point2f** v, Scalar* c, int tris, Mat& out) {
+void Renderer::renderImageGPU(Point2i** v, Scalar* c, int tris, Mat& out) {
 	// glScalef won't work - tested
 	// no need to flip matrix either
 
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
 	glDisable(GL_TEXTURE_2D);
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, framebufferName);
@@ -344,9 +334,9 @@ void Renderer::renderImageGPU(Point2f** v, Scalar* c, int tris, Mat& out) {
 	for(int j = 0; j < tris; j++) {
 		glColor4f(c[j][0], c[j][1], c[j][2], c[j][3]);
 
-		glVertex2f(v[j][0].x, v[j][0].y);
-		glVertex2f(v[j][1].x, v[j][1].y);
-		glVertex2f(v[j][2].x, v[j][2].y);
+		glVertex2i(v[j][0].x, v[j][0].y);
+		glVertex2i(v[j][1].x, v[j][1].y);
+		glVertex2i(v[j][2].x, v[j][2].y);
 	}
 	glEnd();
 	
@@ -354,23 +344,21 @@ void Renderer::renderImageGPU(Point2f** v, Scalar* c, int tris, Mat& out) {
 }
 
 
-uint64 Renderer::renderCPU(Point2f** v, Scalar* c, int tris) {
-	int wh = width / 2;
-	int hh = height / 2;
-
+uint64 Renderer::renderCPU(Point2i** v, Scalar* c, int tris) {
 	Mat out = Mat(height, width, CV_8UC3, Scalar(0, 0, 0));
 	Mat overlay = Mat(height, width, CV_8UC3, Scalar(0, 0, 0));
 
 	for(int i = 0; i < tris; i++) {
 		Point p[] = {
-			Point(v[i][0].x * wh + wh, v[i][0].y * hh + hh),
-			Point(v[i][1].x * wh + wh, v[i][1].y * hh + hh),
-			Point(v[i][2].x * wh + wh, v[i][2].y * hh + hh),
+			Point(v[i][0].x, v[i][0].y),
+			Point(v[i][1].x, v[i][1].y),
+			Point(v[i][2].x, v[i][2].y),
 		};
 		Scalar cf = Scalar(c[i][0] * 255.0, c[i][1] * 255.0, c[i][2] * 255.0);
 		fillConvexPoly(overlay, p, 3, cf);
 
-		addWeighted(overlay, c[i][3], out, 1.0 - c[i][3], 0, out);
+		float alpha = c[i][3];// * 0.1;
+		addWeighted(overlay, alpha, out, 1.0 - alpha, 0, out);
 	}
 	
 	absdiff(out, *original, overlay);
@@ -382,22 +370,20 @@ uint64 Renderer::renderCPU(Point2f** v, Scalar* c, int tris) {
 }
 
 
-void Renderer::renderImageCPU(Point2f** v, Scalar* c, int tris, Mat& out) {
-	int wh = width / 2;
-	int hh = height / 2;
-
+void Renderer::renderImageCPU(Point2i** v, Scalar* c, int tris, Mat& out) {
 	Mat overlay = Mat(height, width, CV_8UC3, Scalar(0, 0, 0));
 
 	for(int i = 0; i < tris; i++) {
 		Point p[] = {
-			Point(v[i][0].x * wh + wh, v[i][0].y * hh + hh),
-			Point(v[i][1].x * wh + wh, v[i][1].y * hh + hh),
-			Point(v[i][2].x * wh + wh, v[i][2].y * hh + hh),
+			Point(v[i][0].x, v[i][0].y),
+			Point(v[i][1].x, v[i][1].y),
+			Point(v[i][2].x, v[i][2].y),
 		};
 		Scalar cf = Scalar(c[i][0] * 255.0, c[i][1] * 255.0, c[i][2] * 255.0);
 		fillConvexPoly(overlay, p, 3, cf);
 
-		addWeighted(overlay, c[i][3], out, 1.0 - c[i][3], 0, out);
+		float alpha = c[i][3];// * 0.1;
+		addWeighted(overlay, alpha, out, 1.0 - alpha, 0, out);
 	}
 }
 

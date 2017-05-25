@@ -14,8 +14,8 @@ public:
 	~Renderer();
 	
 	
-	void render(Point2f** v, Scalar* c, int tris, uint64* grades);
-	void renderImage(Point2f** v, Scalar* c, int tris, Mat& out);
+	uint64 render(Point2i** v, Scalar* c, int tris);
+	void renderImage(Point2i** v, Scalar* c, int tris, Mat& out);
 	
 private:
 	Mat* original;
@@ -33,11 +33,11 @@ private:
 	void printShaderInfoLog(const char* title, uint obj);
 	void printProgramInfoLog(const char* title, uint obj);
 	
-	void renderImageGPU(Point2f** v, Scalar* c, int tris, Mat& out);
-	void renderImageCPU(Point2f** v, Scalar* c, int tris, Mat& out);
+	void renderImageGPU(Point2i** v, Scalar* c, int tris, Mat& out);
+	void renderImageCPU(Point2i** v, Scalar* c, int tris, Mat& out);
 	
-	uint64 renderGPU(Point2f** v, Scalar* c, int tris);
-	uint64 renderCPU(Point2f** v, Scalar* c, int tris);
+	uint64 renderGPU(Point2i** v, Scalar* c, int tris);
+	uint64 renderCPU(Point2i** v, Scalar* c, int tris);
 	
 	uint originalTexture;
 	uint renderedTexture;

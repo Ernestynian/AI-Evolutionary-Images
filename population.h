@@ -73,10 +73,10 @@ private:
 	
 	// GENES
 	Scalar** colors;
-	Point2f*** solutions;
+	Point2i*** solutions;
 	bool* selected;
 	Scalar** p_colors;
-	Point2f*** p_solutions;
+	Point2i*** p_solutions;
 	
 	int parentsAmount, childsAmount;
 	
