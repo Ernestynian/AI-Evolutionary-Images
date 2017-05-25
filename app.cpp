@@ -20,11 +20,14 @@ App::App()
 
 void App::run() {
 	Mat input = imread((const char*[]) { "",
-		"MonaLisa.jpg", // 1
-		"cat.jpg",		// 2
-		"mona.jpg",		// 3
-		"spongebob.jpg" // 4
-	}[ 2 ]);
+		"BitwaPodGrunwaldem.jpg", // 1
+		"cat.jpg",		          // 2
+		"mona.jpg",		          // 3
+		"spongebob.jpg",          // 4
+		"saitama.jpg",            // 5
+		"scream.jpg",             // 6
+        "result.svg.png"          // 7
+	}[ 6 ]);
 	
 	int newWidth = input.cols - (input.cols % 4);
 	resize(input, input, Size(newWidth, input.rows), 0, 0, INTER_CUBIC);
