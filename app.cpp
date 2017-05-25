@@ -25,6 +25,9 @@ void App::run() {
 		"spongebob.jpg" // 4
 	}[ 1 ]);
 	
+	int newWidth = input.cols - (input.cols % 4);
+	resize(input, input, Size(newWidth, input.rows), 0, 0, INTER_CUBIC);
+	
 	worstFitness = (uint64)input.cols * (uint64)input.rows * 3 * 255;
 	
 	Population population(input);
@@ -35,11 +38,11 @@ void App::run() {
 	Mat bestImage;
 	
 	int i = 0;
-	for(; i < populations; ++i) {
+	for(;; ++i) {
 		high_resolution_clock::time_point t1 = high_resolution_clock::now();
 		population.selection(SelectionType::BestOnes);
 		high_resolution_clock::time_point t2 = high_resolution_clock::now();
-		population.crossover(CrossoverType::WithParents);
+		population.crossover(CrossoverType::Kill);
 		high_resolution_clock::time_point t3 = high_resolution_clock::now();
 		population.mutation(MutationType::Uniform);
 		high_resolution_clock::time_point t4 = high_resolution_clock::now();

@@ -26,6 +26,7 @@ static glXMakeContextCurrentARBProc glXMakeContextCurrentARB = 0;
 Renderer::Renderer(Mat& original, int width, int height, bool isHardwareAccelerated):
 	width(width), height(height) {
 	this->original = &original;
+	columnAvgs = nullptr;
 	
 	this->isHardwareAccelerated = isHardwareAccelerated;
 	if (isHardwareAccelerated) {
@@ -102,6 +103,12 @@ Renderer::Renderer(Mat& original, int width, int height, bool isHardwareAccelera
 }
 
 
+Renderer::~Renderer() {
+	if (columnAvgs != nullptr)
+		delete[] columnAvgs;
+}
+
+
 void Renderer::prepareOpenGL() {
 	glewInit();
 	
@@ -111,9 +118,6 @@ void Renderer::prepareOpenGL() {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthMask(false);
-
-	glPixelStorei(GL_PACK_ALIGNMENT, (original->step & 3) ? 1 : 4);
-	glPixelStorei(GL_PACK_ROW_LENGTH, original->step / original->elemSize());
 	
 	glViewport(0, 0, width, height);
 	
@@ -176,11 +180,6 @@ void Renderer::prepareOpenGL() {
 	glDrawBuffers(1, DrawBuffers);
 	
 	assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
-}
-
-
-Renderer::~Renderer() {
-	delete[] columnAvgs;
 }
 
 
