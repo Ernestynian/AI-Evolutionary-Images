@@ -10,6 +10,7 @@ using namespace std::chrono;
 
 App::App() 
 	: white(255,255,255),
+	  black(0, 0, 0),
 	  pPos(5, 16),
 	  fPos(5, 36)
 {
@@ -20,10 +21,10 @@ App::App()
 void App::run() {
 	Mat input = imread((const char*[]) { "",
 		"MonaLisa.jpg", // 1
-		"Cat.jpg",		// 2
+		"cat.jpg",		// 2
 		"mona.jpg",		// 3
 		"spongebob.jpg" // 4
-	}[ 1 ]);
+	}[ 2 ]);
 	
 	int newWidth = input.cols - (input.cols % 4);
 	resize(input, input, Size(newWidth, input.rows), 0, 0, INTER_CUBIC);
@@ -91,9 +92,11 @@ void App::drawImages(Mat image1, Mat image2, Mat image3, int pid, uint64 fitness
 	image3.copyTo(output);
 
 	sprintf(buffer, "Gen: %d", pid + 1);
+	putText(dst, buffer, pPos, FONT_HERSHEY_PLAIN, 1.0, black, 2, CV_AA);
 	putText(dst, buffer, pPos, FONT_HERSHEY_PLAIN, 1.0, white, 1, CV_AA);
 	
 	sprintf(buffer, "Fit: %.2f%%", 100.0 * (1.0 - (double)fitness / worstFitness) );
+	putText(dst, buffer, fPos, FONT_HERSHEY_PLAIN, 1.0, black, 2, CV_AA);
 	putText(dst, buffer, fPos, FONT_HERSHEY_PLAIN, 1.0, white, 1, CV_AA);
 	
 	imshow(windowTitle, dst);

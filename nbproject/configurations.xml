@@ -13,8 +13,8 @@
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
                    projectFiles="true">
-      <itemPath>Cat.jpg</itemPath>
       <itemPath>MonaLisa.jpg</itemPath>
+      <itemPath>cat.jpg</itemPath>
       <itemPath>diff.frag</itemPath>
       <itemPath>render.frag</itemPath>
       <itemPath>sum.frag</itemPath>
@@ -60,13 +60,13 @@
           <commandLine>-lGLEW -lGLU -lGL -lX11</commandLine>
         </linkerTool>
       </compileType>
-      <item path="Cat.jpg" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="MonaLisa.jpg" ex="false" tool="3" flavor2="0">
       </item>
       <item path="app.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="app.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="cat.jpg" ex="false" tool="3" flavor2="0">
       </item>
       <item path="diff.frag" ex="false" tool="3" flavor2="0">
       </item>
@@ -119,13 +119,13 @@
           <commandLine>-lGLEW -lGLU -lGL -lX11</commandLine>
         </linkerTool>
       </compileType>
-      <item path="Cat.jpg" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="MonaLisa.jpg" ex="false" tool="3" flavor2="0">
       </item>
       <item path="app.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="app.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="cat.jpg" ex="false" tool="3" flavor2="0">
       </item>
       <item path="diff.frag" ex="false" tool="3" flavor2="0">
       </item>
@@ -168,13 +168,13 @@
           <commandLine>-lGLEW -lGLU -lGL -lX11</commandLine>
         </linkerTool>
       </compileType>
-      <item path="Cat.jpg" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="MonaLisa.jpg" ex="false" tool="3" flavor2="0">
       </item>
       <item path="app.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="app.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="cat.jpg" ex="false" tool="3" flavor2="0">
       </item>
       <item path="diff.frag" ex="false" tool="3" flavor2="0">
       </item>

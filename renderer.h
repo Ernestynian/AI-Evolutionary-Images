@@ -26,8 +26,8 @@ private:
 	
 	void prepareOpenGL();
 	void createShaders();
-	uint fragShader0, fragShader1, fragShader2;
-	uint p0, p1, p2;
+	uint fragShader[3];
+	uint p[3];
 	
 	char* textFileRead(const char* fn);
 	void printShaderInfoLog(const char* title, uint obj);

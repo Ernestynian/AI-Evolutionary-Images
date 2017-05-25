@@ -62,7 +62,7 @@ private:
 	const double mutationChance = 0.01;
 	const float  mutationSize   = 0.10;
 
-	const int triangleCount     = 50;
+	const int triangleCount     = 250;
 	const int populationSize    = 50;
 	int cols, rows;
 	

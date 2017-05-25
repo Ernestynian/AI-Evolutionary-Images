@@ -106,6 +106,13 @@ Renderer::Renderer(Mat& original, int width, int height, bool isHardwareAccelera
 Renderer::~Renderer() {
 	if (columnAvgs != nullptr)
 		delete[] columnAvgs;
+		
+	if (isHardwareAccelerated) {
+		for (int i = 0; i < 3; ++i) {
+			glDeleteShader(fragShader[i]);
+			glDeleteProgram(p[i]);
+		}
+	}
 }
 
 
@@ -187,43 +194,24 @@ void Renderer::prepareOpenGL() {
 void Renderer::createShaders() {
 	assert(GLEW_ARB_fragment_shader);
 	
-	const char* fragmentShaderCode0 = textFileRead("render.frag");
-	const char* fragmentShaderCode1 = textFileRead("diff.frag");
-	const char* fragmentShaderCode2 = textFileRead("sum.frag");
+	const char* fragmentShaderCode[] = {
+		textFileRead("render.frag"),
+		textFileRead("diff.frag"),
+		textFileRead("sum.frag")
+	};	
 	
-	fragShader0 = glCreateShader(GL_FRAGMENT_SHADER);
-	fragShader1 = glCreateShader(GL_FRAGMENT_SHADER);
-	fragShader2 = glCreateShader(GL_FRAGMENT_SHADER);
-	
-	glShaderSource(fragShader0, 1, &fragmentShaderCode0, nullptr);
-	glShaderSource(fragShader1, 1, &fragmentShaderCode1, nullptr);
-	glShaderSource(fragShader2, 1, &fragmentShaderCode2, nullptr);
-	
-	glCompileShader(fragShader0);
-	glCompileShader(fragShader1);
-	glCompileShader(fragShader2);
-	
-	printShaderInfoLog("f0", fragShader0);
-	printShaderInfoLog("f1", fragShader1);
-	printShaderInfoLog("f2", fragShader2);
-	
-	p0 = glCreateProgram();
-	p1 = glCreateProgram();
-	p2 = glCreateProgram();
-
-	glAttachShader(p0, fragShader0);
-	glAttachShader(p1, fragShader1);
-	glAttachShader(p2, fragShader2);
-
-	glLinkProgram(p0);
-	glLinkProgram(p1);
-	glLinkProgram(p2);
-	
-	printProgramInfoLog("p0", p0);
-	printProgramInfoLog("p1", p1);
-	printProgramInfoLog("p2", p2);
+	for (int i = 0; i < 3; ++i) {
+		fragShader[i] = glCreateShader(GL_FRAGMENT_SHADER);
+		glShaderSource(fragShader[i], 1, &fragmentShaderCode[i], nullptr);
+		glCompileShader(fragShader[i]);
+		printShaderInfoLog(fragmentShaderCode[i], fragShader[i]);
+		
+		p[i] = glCreateProgram();
+		glAttachShader(p[i], fragShader[i]);
+		glLinkProgram(p[i]);
+		printProgramInfoLog(fragmentShaderCode[i], p[i]);
+	}
 }
-
 
 
 uint64 Renderer::render(Point2i** v, Scalar* c, int tris) {
@@ -243,15 +231,14 @@ void Renderer::renderImage(Point2i** v, Scalar* c, int tris, Mat& out) {
 
 
 uint64 Renderer::renderGPU(Point2i** v, Scalar* c, int tris) {
-	// glScalef won't work - tested
-	// no need to flip matrix either
-
+	///////// RENDER IMAGE TO TEXTURE /////////
+	
 	glDisable(GL_TEXTURE_2D);
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, framebufferName);
 	glClear(GL_COLOR_BUFFER_BIT);
 	
-	glUseProgram(p0);
+	glUseProgram(p[0]);
 	
 	glBegin(GL_TRIANGLES);
 	for(int j = 0; j < tris; j++) {
@@ -263,14 +250,14 @@ uint64 Renderer::renderGPU(Point2i** v, Scalar* c, int tris) {
 	}
 	glEnd();
 	
-	///////// SECOND PASS /////////
+	///////// CALCULATE PIXELS DIFFERENCE /////////
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer2Name);
 	glClear(GL_COLOR_BUFFER_BIT);
 	
-	glUseProgram(p1);
-	GLuint tex1ID = glGetUniformLocation(p1, "render");
-	GLuint tex2ID = glGetUniformLocation(p1, "orig");
+	glUseProgram(p[1]);
+	GLuint tex1ID = glGetUniformLocation(p[1], "render");
+	GLuint tex2ID = glGetUniformLocation(p[1], "orig");
 	glUniform1i(tex1ID, 0);
 	glUniform1i(tex2ID, 1);
 	
@@ -287,14 +274,14 @@ uint64 Renderer::renderGPU(Point2i** v, Scalar* c, int tris) {
 		glTexCoord2i(1, 0); glVertex2i(width, 0);
 	glEnd();
 	
-	///////// THIRD PASS /////////
+	///////// CALCULATE SUMS OF COLUMNS /////////
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	
-	glUseProgram(p2);
-	GLuint texID = glGetUniformLocation(p2, "diff");
-	GLuint imhID = glGetUniformLocation(p2, "imageHeight");
+	glUseProgram(p[2]);
+	GLuint texID = glGetUniformLocation(p[2], "diff");
+	GLuint imhID = glGetUniformLocation(p[2], "imageHeight");
 	glUniform1i(texID, 0);
 	glUniform1i(imhID, height);
 	
@@ -309,7 +296,7 @@ uint64 Renderer::renderGPU(Point2i** v, Scalar* c, int tris) {
 		glTexCoord2i(1, 0); glVertex2i(width, 0);
 	glEnd();
 	
-	// Copy OpenGL buffer data
+	///////// CALCULATE FITNESS /////////
 	float sum = 0.0;
 	glReadPixels(0, 0, width, 1, GL_RED, GL_FLOAT, columnAvgs);
 	for (int i = 0; i < width; ++i)
@@ -328,7 +315,7 @@ void Renderer::renderImageGPU(Point2i** v, Scalar* c, int tris, Mat& out) {
 	glBindFramebuffer(GL_FRAMEBUFFER, framebufferName);
 	glClear(GL_COLOR_BUFFER_BIT);
 	
-	glUseProgram(p0);
+	glUseProgram(p[0]);
 	
 	glBegin(GL_TRIANGLES);
 	for(int j = 0; j < tris; j++) {

@@ -10,8 +10,8 @@ Population::Population(Mat& target)
 	this->target = &target;
 	this->cols = target.cols;
 	this->rows = target.rows;
-
-	renderer = new Renderer(target, cols, rows, false);
+	
+	renderer = new Renderer(target, cols, rows);
 	
 	grades      = new uint64[populationSize];
 	solutions   = new Point2i**[populationSize];
