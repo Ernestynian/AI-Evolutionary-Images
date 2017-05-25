@@ -11,6 +11,9 @@ void saveTrianglesToSvg(const char* name, Point2i** points, Scalar* colors, int 
     outputFile.open(name);
     // write beginning
     outputFile << "<svg viewBox=\"0 0 " << cols << " " << rows << "\">\n";
+    outputFile << "<rect width=\"" 
+            << cols <<"\" height=\"" 
+            << rows << "\" style=\"fill:rgb(0,0,0);\" />\n";
     // write trangles
     for(int i = 0; i < triangleCount; i++) {
         outputFile << "<path style=\"fill:rgb("
@@ -20,14 +23,14 @@ void saveTrianglesToSvg(const char* name, Point2i** points, Scalar* colors, int 
                 << ");fill-rule:evenodd;stroke:none;opacity:" 
                 << colors[i][3] << "\"\n"
                 << "d=\"M "
-				<< points[i][0] << "," 
+				<< points[i][0].x << "," 
                 << points[i][0].y
                 << " " 
                 << points[i][1].x << "," 
                 << points[i][1].y
                 << " " 
-                << points[i][2] << "," 
-                << points[i][2]
+                << points[i][2].x << "," 
+                << points[i][2].y
                 << " Z\"/>\n";
     }
     //write ending
